@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-scheme="forest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A local, dependency-free portfolio CSV explorer.">
+  <title>Portfolio Explorer</title>
+  <link rel="stylesheet" href="explorer/explorer.css">
+  <script defer src="explorer/model.js"></script>
+  <script defer src="explorer/explorer.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-mark" aria-hidden="true">PE</div>
+    <div>
+      <p class="eyebrow">Local portfolio analytics</p>
+      <h1>Portfolio Explorer</h1>
+    </div>
+    <div class="header-actions">
+      <div class="scheme-picker">
+        <select id="color-scheme" aria-label="Color scheme">
+          <option value="forest">Forest</option>
+          <option value="ocean">Ocean</option>
+          <option value="aubergine">Aubergine</option>
+          <option value="amber">Amber</option>
+        </select>
+      </div>
+      <button id="theme-toggle" class="button button-secondary" type="button" aria-pressed="true">
+        Light mode
+      </button>
+      <button id="replace-file" class="button button-secondary" type="button" hidden>
+        Open another CSV
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section id="file-stage" class="file-stage" aria-labelledby="file-stage-title">
+      <div class="file-stage-art" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="eyebrow">No upload. No server. Your data stays local.</p>
+      <h2 id="file-stage-title">Explore your portfolio from every angle.</h2>
+      <p class="file-stage-copy">
+        Drop an aggregator-generated <strong>portfolio.csv</strong> here, or choose it from disk.
+      </p>
+      <button id="choose-file" class="button button-primary" type="button">Choose portfolio CSV</button>
+      <p class="drop-hint">You can also drag and drop the file anywhere in this panel.</p>
+      <input id="file-input" type="file" accept=".csv,text/csv" hidden>
+    </section>
+
+    <div id="error-banner" class="error-banner" role="alert" hidden></div>
+
+    <section id="dashboard" class="dashboard" hidden aria-live="polite">
+      <div class="dashboard-heading">
+        <p id="file-label" class="file-label"></p>
+        <p id="selection-summary" class="selection-summary"></p>
+      </div>
+
+      <section class="control-panel" aria-label="Portfolio controls">
+        <div class="control-group group-control">
+          <label for="group-by">Group by</label>
+          <select id="group-by">
+            <option value="None">None</option>
+            <option value="Type">Type</option>
+            <option value="Market">Market</option>
+            <option value="Sector">Sector</option>
+            <option value="Risk">Risk</option>
+            <option value="Currency">Currency</option>
+          </select>
+        </div>
+        <fieldset class="account-control">
+          <legend>Accounts</legend>
+          <div class="account-row">
+            <div class="account-actions">
+              <button id="select-all-accounts" class="button button-secondary" type="button">Select all</button>
+              <button id="clear-all-accounts" class="button button-secondary" type="button">Clear all</button>
+            </div>
+            <div id="account-options" class="account-options"></div>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="metric-grid" aria-label="Selected portfolio summary">
+        <article class="metric-card metric-primary">
+          <p>Selected value</p>
+          <strong id="metric-value">—</strong>
+          <span>CAD market value</span>
+        </article>
+        <article class="metric-card">
+          <p>Projected income</p>
+          <strong id="metric-income">—</strong>
+          <span>Annual, in CAD</span>
+        </article>
+        <article class="metric-card">
+          <p>Weighted yield</p>
+          <strong id="metric-yield">—</strong>
+          <span>Known-yield assets</span>
+        </article>
+        <article class="metric-card">
+          <p>Active assets</p>
+          <strong id="metric-assets">—</strong>
+          <span>Non-zero positions</span>
+        </article>
+      </section>
+
+      <section class="analysis-grid">
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Table view</p>
+              <h3 id="table-title">Assets</h3>
+            </div>
+            <p class="sort-help">Click to sort · Shift-click for multiple columns</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead id="table-head"></thead>
+              <tbody id="table-body"></tbody>
+              <tfoot id="table-foot"></tfoot>
+            </table>
+          </div>
+          <div id="table-empty" class="empty-state" hidden>
+            Select at least one account with holdings to populate the table.
+          </div>
+        </article>
+
+        <aside class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Allocation</p>
+              <h3 id="chart-title">By sector</h3>
+            </div>
+          </div>
+          <div id="pie-container" class="pie-container"></div>
+          <div id="pie-legend" class="pie-legend"></div>
+          <div class="fx-control" aria-labelledby="fx-title">
+            <p id="fx-title" class="control-label">FX rates to CAD</p>
+            <table class="fx-table">
+              <thead>
+                <tr><th scope="col">Currency</th><th scope="col">Rate</th></tr>
+              </thead>
+              <tbody id="fx-rates-body"></tbody>
+            </table>
+          </div>
+          <div id="chart-empty" class="empty-state" hidden>
+            The chart will appear when selected accounts contain holdings.
+          </div>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <span>Portfolio Explorer</span>
+    <span>Everything runs in this browser tab.</span>
+  </footer>
+</body>
+</html>

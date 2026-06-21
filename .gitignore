@@ -1,0 +1,4 @@
+# Private dated portfolio snapshots and generated Python caches.
+/portfolio-20??-??-??/
+__pycache__/
+*.py[cod]

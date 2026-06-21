@@ -1,0 +1,24 @@
+{
+  "account_columns": [
+    "Sample A",
+    "Sample B",
+    "Sample Property"
+  ],
+  "real_estate_account": "Sample Property",
+  "allowed_asset_types": ["Stock", "ETF"],
+  "allowed_markets": ["US", "Canada", "Asia", "Global"],
+  "allowed_risks": ["High", "Medium", "Low"],
+  "wealthsimple_account_types": {
+    "Non-registered": "Sample A",
+    "TFSA": "Sample B"
+  },
+  "td_direct_investing_accounts": {
+    "SAMPLE123": { "account": "Sample A", "currency": "USD" }
+  },
+  "assets": {
+    "BMO": { "type": "Stock", "market": "Canada", "sector": "Finance", "risk": "Medium" },
+    "GOOG": { "type": "Stock", "market": "US", "sector": "Technology", "risk": "Medium" },
+    "MSFT": { "type": "Stock", "market": "US", "sector": "Technology", "risk": "Medium" },
+    "SGOV": { "type": "ETF", "market": "US", "sector": "Cash", "risk": "Low" }
+  }
+}
