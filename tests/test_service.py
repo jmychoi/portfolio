@@ -19,14 +19,14 @@ SAMPLE_CONFIG = load_portfolio_config(SAMPLE_DIRECTORY)
 SAMPLE_DOCUMENT = load_portfolio_config_document(SAMPLE_DIRECTORY)
 TEST_ASSETS = dict(SAMPLE_CONFIG.assets)
 TEST_ASSETS.update({
-    "ATZ": AssetMetadata("Stock", "Canada", "Retail", "High"),
-    "NVDA": AssetMetadata("Stock", "US", "Technology", "High"),
+    "ATZ": AssetMetadata("Stock", "Canada", "Retail", "High", "CAD"),
+    "NVDA": AssetMetadata("Stock", "US", "Technology", "High", "USD"),
 })
 TEST_CONFIG = replace(SAMPLE_CONFIG, assets=MappingProxyType(TEST_ASSETS))
 TEST_CONFIGURATION = {**SAMPLE_DOCUMENT, "assets": {
     **SAMPLE_DOCUMENT["assets"],
-    "ATZ": {"type": "Stock", "market": "Canada", "sector": "Retail", "risk": "High"},
-    "NVDA": {"type": "Stock", "market": "US", "sector": "Technology", "risk": "High"},
+    "ATZ": {"type": "Stock", "market": "Canada", "sector": "Retail", "risk": "High", "currency": "CAD"},
+    "NVDA": {"type": "Stock", "market": "US", "sector": "Technology", "risk": "High", "currency": "USD"},
 }}
 TEST_RATES = {
     "CAD": ExchangeRate("CAD", Decimal("1"), "", ""),
@@ -46,7 +46,7 @@ class PortfolioDocumentTests(unittest.TestCase):
         self.assertEqual(document["configuration"], TEST_CONFIGURATION)
         holding = next(item for item in document["holdings"] if item["asset"] == "GOOG")
         self.assertEqual(holding, {
-            "asset": "GOOG", "currency": "USD", "accounts": {"Sample A": Decimal("10")},
+            "asset": "GOOG", "accounts": {"Sample A": Decimal("10")},
         })
         self.assertNotIn("type", holding)
         self.assertNotIn("total", holding)
@@ -69,7 +69,7 @@ class PortfolioDocumentTests(unittest.TestCase):
         self.assertEqual(holding["accounts"], {
             "Sample A": Decimal("1.234567"), "Sample B": Decimal("2"),
         })
-        self.assertEqual(set(holding), {"asset", "currency", "accounts"})
+        self.assertEqual(set(holding), {"asset", "accounts"})
 
     def test_market_yield_cache_is_embedded_with_provenance(self):
         record = YieldRecord("GOOG", "GOOG", Decimal("0.678"), "2026-06-19", "test", "ok")
@@ -91,7 +91,8 @@ class PortfolioDocumentTests(unittest.TestCase):
         )])
         self.assertEqual(document["supplementalAssets"]["Property"], {
             "type": "Real Estate", "market": "Canada", "sector": "Real Estate",
-            "risk": "Medium", "url": "https://example.com/property",
+            "risk": "Medium", "currency": "CAD",
+            "url": "https://example.com/property",
         })
         self.assertEqual(document["yields"]["Property"]["percent"], Decimal("4.125"))
 
@@ -106,12 +107,18 @@ class PortfolioDocumentTests(unittest.TestCase):
                 {"CAD": TEST_RATES["CAD"]}, TEST_CONFIG, TEST_CONFIGURATION, {},
             )
 
+    def test_reported_currency_must_match_configured_currency(self):
+        with self.assertRaisesRegex(
+            ValueError, "configured currency USD conflicts with reported currency CAD"
+        ):
+            build([Holding("GOOG", "CAD", "Sample A", Decimal("1"))])
+
     def test_json_writer_emits_numbers_and_schema(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "portfolio.json"
             write_portfolio_json(build([]), output)
             document = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(document["schemaVersion"], 1)
+            self.assertEqual(document["schemaVersion"], 2)
             self.assertIsInstance(document["exchangeRates"]["USD"]["rateToCad"], float)
 
 

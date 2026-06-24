@@ -13,12 +13,18 @@
       throw new Error("The selected file is not valid JSON");
     }
     requireObject(document, "Portfolio document");
-    if (document.schemaVersion !== 1) {
+    if (document.schemaVersion !== 2) {
       throw new Error(`Unsupported portfolio schema version: ${document.schemaVersion}`);
     }
 
     const configuration = requireObject(document.configuration, "configuration");
     const accounts = requireStringArray(configuration.account_columns, "configuration.account_columns");
+    const allowedCurrencies = new Set(requireStringArray(
+      configuration.allowed_currencies, "configuration.allowed_currencies"
+    ));
+    if (!allowedCurrencies.has("CAD")) {
+      throw new Error("configuration.allowed_currencies must include CAD");
+    }
     const configuredAssets = requireObject(configuration.assets, "configuration.assets");
     const supplementalAssets = requireObject(document.supplementalAssets, "supplementalAssets");
     const exchangeRates = requireObject(document.exchangeRates, "exchangeRates");
@@ -33,6 +39,9 @@
 
     const rates = {};
     for (const [currency, record] of Object.entries(exchangeRates)) {
+      if (!allowedCurrencies.has(currency)) {
+        throw new Error(`Exchange-rate currency ${currency} is not allowed`);
+      }
       requireObject(record, `exchangeRates.${currency}`);
       rates[currency] = positiveNumber(record.rateToCad, `exchangeRates.${currency}.rateToCad`);
     }
@@ -44,11 +53,14 @@
       const asset = requiredText(holding.asset, `${label}.asset`);
       if (seenAssets.has(asset)) throw new Error(`Duplicate holding asset: ${asset}`);
       seenAssets.add(asset);
-      const currency = requiredText(holding.currency, `${label}.currency`);
-      const fxRate = rates[currency];
-      if (!Number.isFinite(fxRate)) throw new Error(`No exchange rate for ${currency}`);
       const metadata = configuredAssets[asset] || supplementalAssets[asset];
       requireObject(metadata, `metadata for ${asset}`);
+      const currency = requiredText(metadata.currency, `metadata for ${asset}.currency`);
+      if (!allowedCurrencies.has(currency)) {
+        throw new Error(`Asset ${asset} uses unsupported currency ${currency}`);
+      }
+      const fxRate = rates[currency];
+      if (!Number.isFinite(fxRate)) throw new Error(`No exchange rate for ${currency}`);
       const sourceAccounts = requireObject(holding.accounts, `${label}.accounts`);
       for (const account of Object.keys(sourceAccounts)) {
         if (!accounts.includes(account)) throw new Error(`${label}: unknown account ${account}`);

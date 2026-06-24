@@ -14,6 +14,7 @@ class AssetMetadata:
     market: str
     sector: str
     risk: str
+    currency: str
 
 
 @dataclass(frozen=True)
@@ -29,14 +30,15 @@ class PortfolioConfig:
     allowed_asset_types: frozenset[str]
     allowed_markets: frozenset[str]
     allowed_risks: frozenset[str]
+    allowed_currencies: frozenset[str]
     wealthsimple_account_types: Mapping[str, str]
     tddi_accounts: Mapping[str, TddiAccount]
     assets: Mapping[str, AssetMetadata]
 
 
 CASH_METADATA = {
-    "CASH-CAD": AssetMetadata("Cash", "Canada", "Cash", "Low"),
-    "CASH-USD": AssetMetadata("Cash", "US", "Cash", "Low"),
+    "CASH-CAD": AssetMetadata("Cash", "Canada", "Cash", "Low", "CAD"),
+    "CASH-USD": AssetMetadata("Cash", "US", "Cash", "Low", "USD"),
 }
 
 
@@ -66,6 +68,7 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
         "allowed_asset_types",
         "allowed_markets",
         "allowed_risks",
+        "allowed_currencies",
         "wealthsimple_account_types",
         "td_direct_investing_accounts",
         "assets",
@@ -81,13 +84,16 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
     allowed_asset_types = frozenset(_string_list(path, raw, "allowed_asset_types"))
     allowed_markets = frozenset(_string_list(path, raw, "allowed_markets"))
     allowed_risks = frozenset(_string_list(path, raw, "allowed_risks"))
-    _validate_cash_metadata(path, allowed_markets, allowed_risks)
+    allowed_currencies = frozenset(_currency_list(path, raw, "allowed_currencies"))
+    _validate_cash_metadata(
+        path, allowed_markets, allowed_risks, allowed_currencies
+    )
 
     wealthsimple_accounts = _load_wealthsimple_accounts(
         path, raw["wealthsimple_account_types"], account_columns
     )
     tddi_accounts = _load_tddi_accounts(
-        path, raw["td_direct_investing_accounts"], account_columns
+        path, raw["td_direct_investing_accounts"], account_columns, allowed_currencies
     )
     assets = _load_assets(
         path,
@@ -95,6 +101,7 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
         allowed_asset_types,
         allowed_markets,
         allowed_risks,
+        allowed_currencies,
     )
     return PortfolioConfig(
         account_columns=account_columns,
@@ -102,6 +109,7 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
         allowed_asset_types=allowed_asset_types,
         allowed_markets=allowed_markets,
         allowed_risks=allowed_risks,
+        allowed_currencies=allowed_currencies,
         wealthsimple_account_types=MappingProxyType(wealthsimple_accounts),
         tddi_accounts=MappingProxyType(tddi_accounts),
         assets=MappingProxyType(assets),
@@ -125,7 +133,10 @@ def _load_wealthsimple_accounts(
 
 
 def _load_tddi_accounts(
-    path: Path, raw: object, account_columns: tuple[str, ...]
+    path: Path,
+    raw: object,
+    account_columns: tuple[str, ...],
+    allowed_currencies: frozenset[str],
 ) -> dict[str, TddiAccount]:
     if not isinstance(raw, dict):
         raise ValueError(f"{path}: td_direct_investing_accounts must be an object")
@@ -139,6 +150,8 @@ def _load_tddi_accounts(
         if account_column not in account_columns:
             raise ValueError(f"{label}: unknown account column {account_column!r}")
         currency = _required_string(label, values, "currency").upper()
+        if currency not in allowed_currencies:
+            raise ValueError(f"{label}: unsupported currency {currency!r}")
         accounts[account_number] = TddiAccount(account_column, currency)
     return accounts
 
@@ -149,6 +162,7 @@ def _load_assets(
     allowed_asset_types: frozenset[str],
     allowed_markets: frozenset[str],
     allowed_risks: frozenset[str],
+    allowed_currencies: frozenset[str],
 ) -> dict[str, AssetMetadata]:
     if not isinstance(raw, dict):
         raise ValueError(f"{path}: assets must be an object")
@@ -159,18 +173,23 @@ def _load_assets(
             raise ValueError(f"{label} must be a non-empty object")
         if asset in CASH_METADATA:
             raise ValueError(f"{label}: cash metadata is built in and must not be configured")
-        _require_exact_keys(label, values, {"type", "market", "sector", "risk"})
+        _require_exact_keys(
+            label, values, {"type", "market", "sector", "risk", "currency"}
+        )
         asset_type = _required_string(label, values, "type")
         market = _required_string(label, values, "market")
         sector = _required_string(label, values, "sector")
         risk = _required_string(label, values, "risk")
+        currency = _required_string(label, values, "currency").upper()
         if asset_type not in allowed_asset_types:
             raise ValueError(f"{label}: unsupported type {asset_type!r}")
         if market not in allowed_markets:
             raise ValueError(f"{label}: unsupported market {market!r}")
         if risk not in allowed_risks:
             raise ValueError(f"{label}: unsupported risk {risk!r}")
-        assets[asset] = AssetMetadata(asset_type, market, sector, risk)
+        if currency not in allowed_currencies:
+            raise ValueError(f"{label}: unsupported currency {currency!r}")
+        assets[asset] = AssetMetadata(asset_type, market, sector, risk, currency)
     return assets
 
 
@@ -188,8 +207,28 @@ def _string_list(path: Path, raw: dict, key: str) -> tuple[str, ...]:
     return tuple(result)
 
 
+def _currency_list(path: Path, raw: dict, key: str) -> tuple[str, ...]:
+    currencies = _string_list(path, raw, key)
+    for currency in currencies:
+        if (
+            len(currency) != 3
+            or not currency.isascii()
+            or not currency.isalpha()
+            or currency != currency.upper()
+        ):
+            raise ValueError(
+                f"{path}: {key} values must be uppercase three-letter currency codes"
+            )
+    if "CAD" not in currencies:
+        raise ValueError(f"{path}: {key} must include CAD")
+    return currencies
+
+
 def _validate_cash_metadata(
-    path: Path, allowed_markets: frozenset[str], allowed_risks: frozenset[str]
+    path: Path,
+    allowed_markets: frozenset[str],
+    allowed_risks: frozenset[str],
+    allowed_currencies: frozenset[str],
 ) -> None:
     for asset, metadata in CASH_METADATA.items():
         if metadata.market not in allowed_markets:
@@ -198,6 +237,11 @@ def _validate_cash_metadata(
             )
         if metadata.risk not in allowed_risks:
             raise ValueError(f"{path}: allowed_risks must support {asset} risk {metadata.risk!r}")
+        if metadata.currency not in allowed_currencies:
+            raise ValueError(
+                f"{path}: allowed_currencies must support {asset} currency "
+                f"{metadata.currency!r}"
+            )
 
 
 def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:

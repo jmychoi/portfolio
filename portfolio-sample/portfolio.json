@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "configuration": {
     "account_columns": [
       "Sample A",
@@ -22,6 +22,10 @@
       "Medium",
       "Low"
     ],
+    "allowed_currencies": [
+      "CAD",
+      "USD"
+    ],
     "wealthsimple_account_types": {
       "Non-registered": "Sample A",
       "TFSA": "Sample B"
@@ -37,25 +41,29 @@
         "type": "Stock",
         "market": "Canada",
         "sector": "Finance",
-        "risk": "Medium"
+        "risk": "Medium",
+        "currency": "CAD"
       },
       "GOOG": {
         "type": "Stock",
         "market": "US",
         "sector": "Technology",
-        "risk": "Medium"
+        "risk": "Medium",
+        "currency": "USD"
       },
       "MSFT": {
         "type": "Stock",
         "market": "US",
         "sector": "Technology",
-        "risk": "Medium"
+        "risk": "Medium",
+        "currency": "USD"
       },
       "SGOV": {
         "type": "ETF",
         "market": "US",
         "sector": "Cash",
-        "risk": "Low"
+        "risk": "Low",
+        "currency": "USD"
       }
     }
   },
@@ -127,66 +135,62 @@
       "type": "Cash",
       "market": "Canada",
       "sector": "Cash",
-      "risk": "Low"
+      "risk": "Low",
+      "currency": "CAD"
     },
     "CASH-USD": {
       "type": "Cash",
       "market": "US",
       "sector": "Cash",
-      "risk": "Low"
+      "risk": "Low",
+      "currency": "USD"
     },
     "Example Rental Property": {
       "type": "Real Estate",
       "market": "Canada",
       "sector": "Real Estate",
       "risk": "Medium",
+      "currency": "CAD",
       "url": "https://example.com/sample-property"
     }
   },
   "holdings": [
     {
       "asset": "BMO",
-      "currency": "CAD",
       "accounts": {
         "Sample B": 22000
       }
     },
     {
       "asset": "CASH-CAD",
-      "currency": "CAD",
       "accounts": {}
     },
     {
       "asset": "CASH-USD",
-      "currency": "USD",
       "accounts": {
         "Sample A": 2500
       }
     },
     {
       "asset": "Example Rental Property",
-      "currency": "CAD",
       "accounts": {
         "Sample Property": 450000
       }
     },
     {
       "asset": "GOOG",
-      "currency": "USD",
       "accounts": {
         "Sample A": 1750
       }
     },
     {
       "asset": "MSFT",
-      "currency": "USD",
       "accounts": {
         "Sample A": 12500
       }
     },
     {
       "asset": "SGOV",
-      "currency": "USD",
       "accounts": {
         "Sample A": 2000
       }

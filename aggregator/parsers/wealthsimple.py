@@ -33,9 +33,15 @@ class WealthsimpleParser(InputParser):
                     value = Decimal(row["Market Value"].strip())
                 except (InvalidOperation, AttributeError) as exc:
                     raise ValueError(f"{path}:{row_number}: invalid market value") from exc
+                currency = (row.get("Market Value Currency") or "").strip().upper()
+                if currency not in config.allowed_currencies:
+                    raise ValueError(
+                        f"{path}:{row_number}: unsupported currency {currency!r}; "
+                        f"expected one of {sorted(config.allowed_currencies)}"
+                    )
                 holdings.append(Holding(
                     symbol=symbol,
-                    currency=row["Market Value Currency"].strip().upper(),
+                    currency=currency,
                     account_column=account_column,
                     market_value=value,
                 ))

@@ -28,10 +28,13 @@ class PortfolioConfigTests(unittest.TestCase):
         )
         self.assertEqual(
             config.assets["MSFT"],
-            AssetMetadata("Stock", "US", "Technology", "Medium"),
+            AssetMetadata("Stock", "US", "Technology", "Medium", "USD"),
         )
+        self.assertEqual(config.allowed_currencies, frozenset({"CAD", "USD"}))
         with self.assertRaises(TypeError):
-            config.assets["NEW"] = AssetMetadata("Stock", "US", "Technology", "Low")
+            config.assets["NEW"] = AssetMetadata(
+                "Stock", "US", "Technology", "Low", "USD"
+            )
 
     def test_missing_configuration_fails_clearly(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -69,6 +72,34 @@ class PortfolioConfigTests(unittest.TestCase):
             del raw["assets"]["MSFT"]["sector"]
             path.write_text(json.dumps(raw), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "missing keys: sector"):
+                load_portfolio_config(Path(directory))
+
+    def test_unsupported_asset_currency_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "inputs" / "config.json"
+            path.parent.mkdir()
+            raw = json.loads(
+                (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            raw["assets"]["MSFT"]["currency"] = "EUR"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unsupported currency 'EUR'"):
+                load_portfolio_config(Path(directory))
+
+    def test_allowed_currencies_require_uppercase_codes_and_cad(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "inputs" / "config.json"
+            path.parent.mkdir()
+            raw = json.loads(
+                (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            raw["allowed_currencies"] = ["USD", "cad"]
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "uppercase three-letter"):
                 load_portfolio_config(Path(directory))
 
 

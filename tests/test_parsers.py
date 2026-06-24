@@ -35,6 +35,17 @@ class ParserTests(unittest.TestCase):
         )
         self.assertIn("Sample B", {holding.account_column for holding in holdings})
 
+    def test_wealthsimple_rejects_currency_outside_configuration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "wealthsimple.csv"
+            path.write_text(
+                "Account Type,Symbol,Market Value,Market Value Currency\n"
+                "TFSA,MSFT,100,EUR\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "unsupported currency 'EUR'"):
+                WealthsimpleParser().parse(path, PORTFOLIO_CONFIG)
+
     def test_real_estate_uses_row_metadata_and_real_estate_account(self):
         holdings = RealEstateParser().parse(INPUTS / "real-estates.csv", PORTFOLIO_CONFIG)
         self.assertEqual(holdings, [Holding(

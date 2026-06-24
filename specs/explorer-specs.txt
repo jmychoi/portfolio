@@ -15,16 +15,18 @@ Input Contract
 
 Only versioned JSON is supported; CSV is not supported. The document must contain:
 
-- schemaVersion 1.
+- schemaVersion 2.
 - configuration with a non-empty, unique account_columns array and asset metadata.
 - exchangeRates keyed by currency with positive rateToCad values.
 - yields keyed by asset.
 - supplementalAssets for cash and real-estate metadata.
-- holdings with unique asset identifiers, currency, and account-value objects.
+- holdings with unique asset identifiers and account-value objects.
 
 Holding account keys must occur in configuration.account_columns. Missing accounts
 are treated as zero. Every holding must resolve to exactly one metadata record from
 configuration.assets or supplementalAssets. Duplicate metadata is invalid.
+Every metadata record used by a holding supplies an allowed currency, and every
+used currency must have an exchange rate.
 
 Yield percent may be numeric or null. Market URLs are derived from providerSymbol.
 Supplemental URLs must be blank or absolute HTTP/HTTPS URLs.

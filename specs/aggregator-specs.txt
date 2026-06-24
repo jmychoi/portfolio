@@ -55,10 +55,16 @@ inputs/config.json contains these keys:
 
 - account_columns: ordered output account names.
 - real_estate_account: account used by real-estates.csv.
-- allowed_asset_types, allowed_markets, and allowed_risks.
+- allowed_asset_types, allowed_markets, allowed_risks, and allowed_currencies.
 - wealthsimple_account_types: provider account type to account-column mappings.
 - td_direct_investing_accounts: account number to account column and currency.
-- assets: Type/Market/Sector/Risk metadata keyed by market asset identifier.
+- assets: Type/Market/Sector/Risk/Currency metadata keyed by market asset identifier.
+
+allowed_currencies is a non-empty list of unique uppercase three-letter currency
+codes and must include CAD. It must also support the built-in CASH-CAD and CASH-USD
+assets. Every configured asset, TDDI account, and currency observed in an input
+statement must use an allowed currency. A statement currency that conflicts with
+the configured currency for an asset is an error.
 
 The complete validated configuration document is embedded unchanged in
 portfolio.json under configuration.
@@ -88,7 +94,7 @@ JSON Output Contract
 portfolio.json has this top-level shape:
 
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "configuration": { ...complete config.json... },
       "exchangeRates": { ... },
       "yields": { ... },
@@ -96,7 +102,7 @@ portfolio.json has this top-level shape:
       "holdings": [ ... ]
     }
 
-schemaVersion is required and currently equals 1.
+schemaVersion is required and currently equals 2.
 
 exchangeRates is keyed by currency. Each value contains:
 
@@ -118,15 +124,14 @@ yields receive derived records.
 
 supplementalAssets contains metadata only for assets not represented in
 configuration.assets. It therefore contains built-in cash assets and real estate.
-Each record contains type, market, sector, and risk. Real estate may additionally
-contain url. Market URLs are not duplicated: Explorer derives them from the yield
-record's providerSymbol.
+Each record contains type, market, sector, risk, and currency. Real estate may
+additionally contain url. Market URLs are not duplicated: Explorer derives them
+from the yield record's providerSymbol.
 
 holdings contains one record per asset:
 
     {
       "asset": "MSFT",
-      "currency": "USD",
       "accounts": {
         "RRSP": 15000,
         "TFSA": 8000
@@ -134,8 +139,9 @@ holdings contains one record per asset:
     }
 
 Only nonzero account values are emitted. Missing configured accounts mean zero.
-Holding records do not duplicate Type, Market, Sector, Risk, yield, URL, or exchange
-rate information.
+Holding records do not duplicate Type, Market, Sector, Risk, Currency, yield, URL,
+or exchange-rate information. Currency is canonical asset metadata in either
+configuration.assets or supplementalAssets.
 
 The output deliberately excludes Total, Total CAD, % Holding, and Projected Annual
 Income. These are presentation-dependent derived values calculated by Explorer from

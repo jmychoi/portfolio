@@ -9,7 +9,7 @@ from aggregator.models import Holding
 from aggregator.parsers import PARSERS
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def discover_csv_files(portfolio_directory: Path) -> list[Path]:
@@ -49,7 +49,6 @@ def build_portfolio_document(
     metadata_by_symbol = {
         symbol: CASH_METADATA[symbol] for symbol in ("CASH-CAD", "CASH-USD")
     }
-    currency_by_symbol = {"CASH-CAD": "CAD", "CASH-USD": "USD"}
     real_estate_yields: dict[str, Decimal | None] = {}
     real_estate_urls: dict[str, str | None] = {}
 
@@ -63,9 +62,11 @@ def build_portfolio_document(
         previous_metadata = metadata_by_symbol.setdefault(holding.symbol, metadata)
         if previous_metadata != metadata:
             raise ValueError(f"Asset {holding.symbol!r} has inconsistent metadata")
-        previous_currency = currency_by_symbol.setdefault(holding.symbol, holding.currency)
-        if previous_currency != holding.currency:
-            raise ValueError(f"Asset {holding.symbol!r} has inconsistent currencies")
+        if metadata.currency != holding.currency:
+            raise ValueError(
+                f"Asset {holding.symbol!r}: configured currency {metadata.currency} "
+                f"conflicts with reported currency {holding.currency}"
+            )
         if holding.asset_type == "Real Estate":
             if holding.symbol in real_estate_yields and real_estate_yields[holding.symbol] != holding.yield_percent:
                 raise ValueError(f"Asset {holding.symbol!r} has inconsistent yields")
@@ -75,7 +76,8 @@ def build_portfolio_document(
             real_estate_urls[holding.symbol] = holding.url
         by_symbol[holding.symbol][holding.account_column] += holding.market_value
 
-    for symbol, currency in currency_by_symbol.items():
+    for symbol, metadata in metadata_by_symbol.items():
+        currency = metadata.currency
         if currency not in exchange_rates:
             raise ValueError(f"No CAD exchange rate found in fx.csv for {currency}")
 
@@ -133,7 +135,6 @@ def build_portfolio_document(
         "holdings": [
             {
                 "asset": symbol,
-                "currency": currency_by_symbol[symbol],
                 "accounts": {
                     account: value
                     for account, value in by_symbol[symbol].items()
@@ -155,6 +156,7 @@ def _metadata_document(metadata: AssetMetadata) -> dict[str, str]:
         "market": metadata.market,
         "sector": metadata.sector,
         "risk": metadata.risk,
+        "currency": metadata.currency,
     }
 
 
@@ -168,7 +170,8 @@ def _holding_metadata(
         if not all(value is not None for value in supplied):
             raise ValueError(f"Asset {holding.symbol!r} has incomplete input metadata")
         return AssetMetadata(
-            holding.asset_type, holding.market, holding.sector, holding.risk
+            holding.asset_type, holding.market, holding.sector, holding.risk,
+            holding.currency,
         )
     try:
         return asset_metadata[holding.symbol]

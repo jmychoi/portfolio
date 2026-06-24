@@ -38,8 +38,11 @@ class RealEstateParser(InputParser):
                         f"expected one of {sorted(config.allowed_risks)}"
                     )
                 currency = (row.get("Currency") or "").strip().upper()
-                if not currency:
-                    raise ValueError(f"{path}:{row_number}: currency is required")
+                if currency not in config.allowed_currencies:
+                    raise ValueError(
+                        f"{path}:{row_number}: unsupported currency {currency!r}; "
+                        f"expected one of {sorted(config.allowed_currencies)}"
+                    )
                 try:
                     value = Decimal(row["Value"].strip())
                 except (InvalidOperation, AttributeError) as exc:
