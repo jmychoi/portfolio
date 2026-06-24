@@ -15,7 +15,7 @@ Input Contract
 
 Only versioned JSON is supported; CSV is not supported. The document must contain:
 
-- schemaVersion 2.
+- schemaVersion 3 and a valid ISO YYYY-MM-DD portfolio date.
 - configuration with a non-empty, unique account_columns array and asset metadata.
 - exchangeRates keyed by currency with positive rateToCad values.
 - yields keyed by asset.
@@ -31,7 +31,7 @@ used currency must have an exchange rate.
 Yield percent may be numeric or null. Market URLs are derived from providerSymbol.
 Supplemental URLs must be blank or absolute HTTP/HTTPS URLs.
 
-Malformed JSON, unsupported schema versions, missing metadata/rates, duplicate
+Malformed JSON, unsupported schema versions, invalid dates, missing metadata/rates, duplicate
 assets/accounts, invalid numbers, unknown accounts, and unsafe URLs produce a visible
 error instead of a partial dashboard.
 

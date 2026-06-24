@@ -13,9 +13,10 @@
       throw new Error("The selected file is not valid JSON");
     }
     requireObject(document, "Portfolio document");
-    if (document.schemaVersion !== 2) {
+    if (document.schemaVersion !== 3) {
       throw new Error(`Unsupported portfolio schema version: ${document.schemaVersion}`);
     }
+    const portfolioDate = requireIsoDate(document.date, "date");
 
     const configuration = requireObject(document.configuration, "configuration");
     const accounts = requireStringArray(configuration.account_columns, "configuration.account_columns");
@@ -90,7 +91,7 @@
         accounts: accountValues,
       };
     });
-    return { accounts, rows, rates };
+    return { date: portfolioDate, accounts, rows, rates };
   }
 
   function deriveAssets(portfolio, selectedAccounts) {
@@ -214,6 +215,20 @@
   function finiteNumber(value, label) {
     if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`${label} must be a number`);
     return value;
+  }
+
+  function requireIsoDate(value, label) {
+    const text = requiredText(value, label);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+    if (!match) throw new Error(`${label} must use valid YYYY-MM-DD format`);
+    const parsed = new Date(`${text}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime())
+        || parsed.getUTCFullYear() !== Number(match[1])
+        || parsed.getUTCMonth() + 1 !== Number(match[2])
+        || parsed.getUTCDate() !== Number(match[3])) {
+      throw new Error(`${label} must use valid YYYY-MM-DD format`);
+    }
+    return text;
   }
 
   function positiveNumber(value, label) {

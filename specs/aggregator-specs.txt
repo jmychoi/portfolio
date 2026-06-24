@@ -16,6 +16,11 @@ Exactly one existing portfolio directory is required:
 
     python aggregate.py portfolio-sample
 
+The generated portfolio date defaults to the current local calendar date. --date
+may override it with a valid ISO YYYY-MM-DD date:
+
+    python aggregate.py portfolio-sample --date 2026-06-20
+
 The default output is <portfolio-directory>/portfolio.json. An existing file is
 atomically replaced. --output may specify a different filename in the portfolio
 directory, but the filename must use the .json extension.
@@ -94,7 +99,8 @@ JSON Output Contract
 portfolio.json has this top-level shape:
 
     {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
+      "date": "2026-06-20",
       "configuration": { ...complete config.json... },
       "exchangeRates": { ... },
       "yields": { ... },
@@ -102,7 +108,8 @@ portfolio.json has this top-level shape:
       "holdings": [ ... ]
     }
 
-schemaVersion is required and currently equals 2.
+schemaVersion is required and currently equals 3. date is the portfolio snapshot
+date and must be a valid ISO YYYY-MM-DD calendar date.
 
 exchangeRates is keyed by currency. Each value contains:
 
@@ -200,7 +207,8 @@ status is fetched again using its cached provider symbol. Writes are atomic.
 Validation
 ==========
 
-The aggregator fails clearly for missing directories/configuration, ambiguous parser
+The aggregator fails clearly for missing directories/configuration, invalid portfolio
+dates, ambiguous parser
 matches, unmapped accounts or assets, inconsistent asset metadata/currency/yield/URL,
 invalid numbers or URLs, missing FX currencies, malformed cache files, and provider
 request/response failures. A failed managed-file write must not leave a partial file.

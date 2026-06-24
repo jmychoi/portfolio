@@ -5,7 +5,8 @@ const path = require("node:path");
 const Model = require(path.join(__dirname, "..", "explorer", "model.js"));
 
 const DOCUMENT = {
-  schemaVersion: 2,
+  schemaVersion: 3,
+  date: "2026-06-20",
   configuration: {
     account_columns: ["Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA"],
     allowed_currencies: ["CAD", "USD"],
@@ -43,12 +44,19 @@ test("portfolio loader rejects malformed JSON", () => {
 
 test("portfolio loader reads accounts, rates, metadata, yields, and derived URLs", () => {
   const portfolio = Model.loadPortfolio(json());
+  assert.equal(portfolio.date, "2026-06-20");
   assert.deepEqual(portfolio.accounts, ["Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA"]);
   assert.equal(portfolio.rates.CAD, 1);
   assert.equal(portfolio.rates.USD, 1.4);
   assert.equal(portfolio.rows[0].currency, "USD");
   assert.equal(portfolio.rows[0].url, "https://finance.yahoo.com/quote/FUND");
   assert.equal(portfolio.rows[1].yieldPct, 2);
+});
+
+test("portfolio loader rejects invalid dates", () => {
+  const document = copyDocument();
+  document.date = "2026-02-30";
+  assert.throws(() => Model.loadPortfolio(json(document)), /valid YYYY-MM-DD/);
 });
 
 test("portfolio loader rejects metadata currencies outside configuration", () => {

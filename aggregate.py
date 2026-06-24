@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 from pathlib import Path
 
 from aggregator.config import load_portfolio_config, load_portfolio_config_document
@@ -24,7 +25,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", "-o", default="portfolio.json",
         help="output filename within the portfolio directory (default: portfolio.json)",
     )
+    parser.add_argument(
+        "--date",
+        type=_iso_date,
+        default=datetime.now().astimezone().date().isoformat(),
+        help="portfolio date in YYYY-MM-DD format (default: current local date)",
+    )
     return parser
+
+
+def _iso_date(value: str) -> str:
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("date must use valid YYYY-MM-DD format") from exc
+    if parsed.isoformat() != value:
+        raise argparse.ArgumentTypeError("date must use valid YYYY-MM-DD format")
+    return value
 
 
 def main() -> None:
@@ -51,7 +68,8 @@ def main() -> None:
     )
     yield_records = load_yields_file(yield_path)
     document = build_portfolio_document(
-        holdings, fx_records, portfolio_config, configuration, yield_records
+        holdings, fx_records, portfolio_config, configuration, yield_records,
+        snapshot_date=args.date,
     )
     write_portfolio_json(document, output_path)
 

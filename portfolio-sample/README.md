@@ -8,7 +8,7 @@ deterministic sample inputs and caches.
 Regenerate the output from the repository root:
 
 ```powershell
-python aggregate.py portfolio-sample
+python aggregate.py portfolio-sample --date 2026-01-02
 ```
 
 Open `explorer.html` and select `portfolio-sample/portfolio.json` to try the Explorer.

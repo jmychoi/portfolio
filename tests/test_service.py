@@ -36,7 +36,8 @@ TEST_RATES = {
 
 def build(holdings, yields=None):
     return build_portfolio_document(
-        holdings, TEST_RATES, TEST_CONFIG, TEST_CONFIGURATION, yields or {}
+        holdings, TEST_RATES, TEST_CONFIG, TEST_CONFIGURATION, yields or {},
+        snapshot_date="2026-06-20",
     )
 
 
@@ -105,6 +106,7 @@ class PortfolioDocumentTests(unittest.TestCase):
             build_portfolio_document(
                 [Holding("GOOG", "USD", "Sample A", Decimal("1"))],
                 {"CAD": TEST_RATES["CAD"]}, TEST_CONFIG, TEST_CONFIGURATION, {},
+                snapshot_date="2026-06-20",
             )
 
     def test_reported_currency_must_match_configured_currency(self):
@@ -118,8 +120,16 @@ class PortfolioDocumentTests(unittest.TestCase):
             output = Path(directory) / "portfolio.json"
             write_portfolio_json(build([]), output)
             document = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(document["schemaVersion"], 2)
+            self.assertEqual(document["schemaVersion"], 3)
+            self.assertEqual(document["date"], "2026-06-20")
             self.assertIsInstance(document["exchangeRates"]["USD"]["rateToCad"], float)
+
+    def test_invalid_portfolio_date_fails_explicitly(self):
+        with self.assertRaisesRegex(ValueError, "valid YYYY-MM-DD"):
+            build_portfolio_document(
+                [], TEST_RATES, TEST_CONFIG, TEST_CONFIGURATION, {},
+                snapshot_date="2026-02-30",
+            )
 
 
 if __name__ == "__main__":

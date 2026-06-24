@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Mapping
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from aggregator.models import Holding
 from aggregator.parsers import PARSERS
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def discover_csv_files(portfolio_directory: Path) -> list[Path]:
@@ -42,7 +43,9 @@ def build_portfolio_document(
     config: PortfolioConfig,
     configuration: dict,
     yield_records: Mapping[str, object],
+    snapshot_date: str,
 ) -> dict:
+    _validate_snapshot_date(snapshot_date)
     by_symbol: dict[str, dict[str, Decimal]] = defaultdict(
         lambda: {column: Decimal("0") for column in config.account_columns}
     )
@@ -121,6 +124,7 @@ def build_portfolio_document(
 
     return {
         "schemaVersion": SCHEMA_VERSION,
+        "date": snapshot_date,
         "configuration": configuration,
         "exchangeRates": {
             currency: {
@@ -148,6 +152,17 @@ def build_portfolio_document(
 
 def write_portfolio_json(document: dict, output_path: Path) -> None:
     write_atomic_json(output_path, document)
+
+
+def _validate_snapshot_date(value: str) -> None:
+    if not isinstance(value, str) or len(value) != 10:
+        raise ValueError("Portfolio date must use valid YYYY-MM-DD format")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("Portfolio date must use valid YYYY-MM-DD format") from exc
+    if parsed.isoformat() != value:
+        raise ValueError("Portfolio date must use valid YYYY-MM-DD format")
 
 
 def _metadata_document(metadata: AssetMetadata) -> dict[str, str]:
