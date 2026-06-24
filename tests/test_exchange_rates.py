@@ -11,6 +11,7 @@ class ExchangeRateTests(unittest.TestCase):
         observation = ExchangeRate("USD", Decimal("1.4171"), "2026-06-19", "Bank of Canada")
         with tempfile.TemporaryDirectory() as directory:
             fx_path = ensure_fx_file(Path(directory), fetcher=lambda: observation)
+            self.assertEqual(fx_path, Path(directory) / "cache" / "fx.csv")
             records = load_fx_file(fx_path)
             self.assertEqual(records["CAD"].rate_to_cad, Decimal("1"))
             self.assertEqual(records["USD"], observation)
@@ -28,7 +29,8 @@ class ExchangeRateTests(unittest.TestCase):
 
     def test_malformed_existing_fx_file_fails(self):
         with tempfile.TemporaryDirectory() as directory:
-            fx_path = Path(directory) / "fx.csv"
+            fx_path = Path(directory) / "cache" / "fx.csv"
+            fx_path.parent.mkdir()
             fx_path.write_text("Currency,Rate CAD\nUSD,not-a-number\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "expected columns"):
                 load_fx_file(fx_path)

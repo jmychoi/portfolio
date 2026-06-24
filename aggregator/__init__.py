@@ -1,2 +1,1 @@
-"""Portfolio CSV aggregation package."""
-
+"""Portfolio JSON aggregation package."""

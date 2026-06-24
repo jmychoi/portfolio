@@ -1,8 +1,0 @@
-Asset,Type,Market,Sector,Risk,Currency,FX Rate CAD,Yield,Total,Total CAD,% Holding,Projected Annual Income,URL,Sample A,Sample B,Sample Property
-Example Rental Property,Real Estate,Canada,Real Estate,Medium,CAD,1,4.00,450000.00,450000.00,90.32,18000.00,https://example.com/sample-property,0.00,0.00,450000.00
-BMO,Stock,Canada,Finance,Medium,CAD,1,4.50,22000.00,22000.00,4.42,990.00,https://finance.yahoo.com/quote/BMO.TO,0.00,22000.00,0.00
-MSFT,Stock,US,Technology,Medium,USD,1.4,0.75,12500.00,17500.00,3.51,131.25,https://finance.yahoo.com/quote/MSFT,12500.00,0.00,0.00
-CASH-USD,Cash,US,Cash,Low,USD,1.4,0.00,2500.00,3500.00,0.70,0.00,,2500.00,0.00,0.00
-SGOV,ETF,US,Cash,Low,USD,1.4,4.20,2000.00,2800.00,0.56,117.60,https://finance.yahoo.com/quote/SGOV,2000.00,0.00,0.00
-GOOG,Stock,US,Technology,Medium,USD,1.4,0.50,1750.00,2450.00,0.49,12.25,https://finance.yahoo.com/quote/GOOG,1750.00,0.00,0.00
-CASH-CAD,Cash,Canada,Cash,Low,CAD,1,0.00,0.00,0.00,0.00,0.00,,0.00,0.00,0.00

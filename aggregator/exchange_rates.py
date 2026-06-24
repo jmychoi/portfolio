@@ -14,6 +14,7 @@ BANK_OF_CANADA_URL = (
     "https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1"
 )
 FX_COLUMNS = ("Currency", "Rate CAD", "Date", "Source")
+CACHE_RELATIVE_PATH = Path("cache") / "fx.csv"
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class ExchangeRate:
 
 
 def ensure_fx_file(portfolio_directory: Path, fetcher=None) -> Path:
-    fx_path = portfolio_directory / "fx.csv"
+    fx_path = portfolio_directory / CACHE_RELATIVE_PATH
     if fx_path.exists():
         return fx_path
     observation = (fetcher or fetch_usd_cad_rate)()

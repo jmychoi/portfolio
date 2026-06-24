@@ -5,99 +5,80 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const REQUIRED_COLUMNS = [
-    "Asset", "Type", "Market", "Sector", "Risk", "Currency", "FX Rate CAD",
-    "Yield", "Total", "Total CAD", "% Holding", "Projected Annual Income", "URL",
-  ];
-  function parseCsv(text) {
-    const rows = [];
-    let row = [];
-    let field = "";
-    let quoted = false;
-    const source = String(text).replace(/^\uFEFF/, "");
-
-    for (let index = 0; index < source.length; index += 1) {
-      const character = source[index];
-      if (quoted) {
-        if (character === '"' && source[index + 1] === '"') {
-          field += '"';
-          index += 1;
-        } else if (character === '"') {
-          quoted = false;
-        } else {
-          field += character;
-        }
-      } else if (character === '"') {
-        if (field.length !== 0) throw new Error("Malformed CSV: quote inside an unquoted field");
-        quoted = true;
-      } else if (character === ",") {
-        row.push(field);
-        field = "";
-      } else if (character === "\n") {
-        row.push(field.replace(/\r$/, ""));
-        rows.push(row);
-        row = [];
-        field = "";
-      } else {
-        field += character;
-      }
-    }
-    if (quoted) throw new Error("Malformed CSV: unterminated quoted field");
-    if (field.length || row.length) {
-      row.push(field.replace(/\r$/, ""));
-      rows.push(row);
-    }
-    return rows.filter((values) => values.some((value) => value !== ""));
-  }
-
   function loadPortfolio(text) {
-    const matrix = parseCsv(text);
-    if (matrix.length < 2) throw new Error("The CSV must contain a header and at least one asset row");
-    const headers = matrix[0].map((header) => header.trim());
-    const duplicate = headers.find((header, index) => headers.indexOf(header) !== index);
-    if (duplicate) throw new Error(`Duplicate CSV column: ${duplicate}`);
-    const missing = REQUIRED_COLUMNS.filter((column) => !headers.includes(column));
-    if (missing.length) throw new Error(`Missing required columns: ${missing.join(", ")}`);
-
-    const accountStart = headers.indexOf("URL") + 1;
-    const accounts = headers.slice(accountStart);
-    if (!accounts.length) throw new Error("No account columns were found");
-    if (accounts.some((account) => !account)) {
-      throw new Error("Account column names must not be empty");
+    let document;
+    try {
+      document = JSON.parse(String(text).replace(/^\uFEFF/, ""));
+    } catch (_) {
+      throw new Error("The selected file is not valid JSON");
+    }
+    requireObject(document, "Portfolio document");
+    if (document.schemaVersion !== 1) {
+      throw new Error(`Unsupported portfolio schema version: ${document.schemaVersion}`);
     }
 
-    const parsedRows = matrix.slice(1).map((values, rowIndex) => {
-      if (values.length !== headers.length) {
-        throw new Error(
-          `CSV row ${rowIndex + 2} has ${values.length} fields; expected ${headers.length}`
-        );
+    const configuration = requireObject(document.configuration, "configuration");
+    const accounts = requireStringArray(configuration.account_columns, "configuration.account_columns");
+    const configuredAssets = requireObject(configuration.assets, "configuration.assets");
+    const supplementalAssets = requireObject(document.supplementalAssets, "supplementalAssets");
+    const exchangeRates = requireObject(document.exchangeRates, "exchangeRates");
+    const yields = requireObject(document.yields, "yields");
+    if (!Array.isArray(document.holdings)) throw new Error("holdings must be an array");
+
+    for (const asset of Object.keys(supplementalAssets)) {
+      if (Object.prototype.hasOwnProperty.call(configuredAssets, asset)) {
+        throw new Error(`Asset ${asset} has duplicate metadata`);
       }
-      const raw = Object.fromEntries(headers.map((header, index) => [header, values[index]]));
-      const accountValues = Object.fromEntries(
-        accounts.map((account) => [account, parseNumber(raw[account], account, rowIndex + 2)])
-      );
+    }
+
+    const rates = {};
+    for (const [currency, record] of Object.entries(exchangeRates)) {
+      requireObject(record, `exchangeRates.${currency}`);
+      rates[currency] = positiveNumber(record.rateToCad, `exchangeRates.${currency}.rateToCad`);
+    }
+
+    const seenAssets = new Set();
+    const rows = document.holdings.map((holding, index) => {
+      const label = `holdings[${index}]`;
+      requireObject(holding, label);
+      const asset = requiredText(holding.asset, `${label}.asset`);
+      if (seenAssets.has(asset)) throw new Error(`Duplicate holding asset: ${asset}`);
+      seenAssets.add(asset);
+      const currency = requiredText(holding.currency, `${label}.currency`);
+      const fxRate = rates[currency];
+      if (!Number.isFinite(fxRate)) throw new Error(`No exchange rate for ${currency}`);
+      const metadata = configuredAssets[asset] || supplementalAssets[asset];
+      requireObject(metadata, `metadata for ${asset}`);
+      const sourceAccounts = requireObject(holding.accounts, `${label}.accounts`);
+      for (const account of Object.keys(sourceAccounts)) {
+        if (!accounts.includes(account)) throw new Error(`${label}: unknown account ${account}`);
+      }
+      const accountValues = Object.fromEntries(accounts.map((account) => [
+        account,
+        sourceAccounts[account] === undefined
+          ? 0 : finiteNumber(sourceAccounts[account], `${label}.accounts.${account}`),
+      ]));
+      const yieldRecord = yields[asset];
+      if (yieldRecord !== undefined) requireObject(yieldRecord, `yields.${asset}`);
+      const yieldPct = yieldRecord === undefined || yieldRecord.percent === null
+        ? null : finiteNumber(yieldRecord.percent, `yields.${asset}.percent`);
+      const url = metadata.url
+        ? optionalUrl(metadata.url, `metadata for ${asset}`)
+        : yahooFinanceUrl(yieldRecord && yieldRecord.providerSymbol);
       return {
-        asset: requiredText(raw.Asset, "Asset", rowIndex + 2),
-        type: requiredText(raw.Type, "Type", rowIndex + 2),
-        market: requiredText(raw.Market, "Market", rowIndex + 2),
-        sector: requiredText(raw.Sector, "Sector", rowIndex + 2),
-        risk: requiredText(raw.Risk, "Risk", rowIndex + 2),
-        currency: requiredText(raw.Currency, "Currency", rowIndex + 2),
-        yieldPct: optionalNumber(raw.Yield, "Yield", rowIndex + 2),
-        fxRate: positiveNumber(raw["FX Rate CAD"], "FX Rate CAD", rowIndex + 2),
-        url: optionalUrl(raw.URL, rowIndex + 2),
+        asset,
+        type: requiredText(metadata.type, `metadata for ${asset}.type`),
+        market: requiredText(metadata.market, `metadata for ${asset}.market`),
+        sector: requiredText(metadata.sector, `metadata for ${asset}.sector`),
+        risk: requiredText(metadata.risk, `metadata for ${asset}.risk`),
+        currency,
+        yieldPct,
+        fxRate,
+        url,
         accounts: accountValues,
       };
     });
-
-    const rates = {};
-    for (const row of parsedRows) {
-      if (rates[row.currency] !== undefined && Math.abs(rates[row.currency] - row.fxRate) > 1e-9) {
-        throw new Error(`Inconsistent CAD exchange rates for ${row.currency}`);
-      }
-      rates[row.currency] = row.fxRate;
-    }
-    return { headers, accounts, rows: parsedRows, rates };
+    return { accounts, rows, rates };
   }
 
   function deriveAssets(portfolio, selectedAccounts) {
@@ -181,10 +162,8 @@
         const leftValue = left[sort.key];
         const rightValue = right[sort.key];
         let comparison;
-        if (
-          (leftValue === null || leftValue === undefined)
-          && (rightValue === null || rightValue === undefined)
-        ) comparison = 0;
+        if ((leftValue === null || leftValue === undefined)
+            && (rightValue === null || rightValue === undefined)) comparison = 0;
         else if (leftValue === null || leftValue === undefined) comparison = 1;
         else if (rightValue === null || rightValue === undefined) comparison = -1;
         else if (typeof leftValue === "number" && typeof rightValue === "number") {
@@ -200,52 +179,54 @@
     });
   }
 
-  function requiredText(value, column, rowNumber) {
-    const text = String(value || "").trim();
-    if (!text) throw new Error(`CSV row ${rowNumber}: ${column} is required`);
+  function requireObject(value, label) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new Error(`${label} must be an object`);
+    }
+    return value;
+  }
+
+  function requireStringArray(value, label) {
+    if (!Array.isArray(value) || !value.length) throw new Error(`${label} must be a non-empty array`);
+    const result = value.map((item, index) => requiredText(item, `${label}[${index}]`));
+    if (new Set(result).size !== result.length) throw new Error(`${label} contains duplicates`);
+    return result;
+  }
+
+  function requiredText(value, label) {
+    const text = typeof value === "string" ? value.trim() : "";
+    if (!text) throw new Error(`${label} is required`);
     return text;
   }
 
-  function parseNumber(value, column, rowNumber) {
-    const number = Number(String(value).trim());
-    if (!Number.isFinite(number)) {
-      throw new Error(`CSV row ${rowNumber}: invalid number in ${column}`);
-    }
+  function finiteNumber(value, label) {
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`${label} must be a number`);
+    return value;
+  }
+
+  function positiveNumber(value, label) {
+    const number = finiteNumber(value, label);
+    if (number <= 0) throw new Error(`${label} must be positive`);
     return number;
   }
 
-  function optionalNumber(value, column, rowNumber) {
-    if (String(value || "").trim() === "") return null;
-    return parseNumber(value, column, rowNumber);
-  }
-
-  function positiveNumber(value, column, rowNumber) {
-    const number = parseNumber(value, column, rowNumber);
-    if (number <= 0) throw new Error(`CSV row ${rowNumber}: ${column} must be positive`);
-    return number;
-  }
-
-  function optionalUrl(value, rowNumber) {
+  function optionalUrl(value, label) {
     const text = String(value || "").trim();
     if (!text) return null;
     let parsed;
-    try {
-      parsed = new URL(text);
-    } catch (_) {
-      throw new Error(`CSV row ${rowNumber}: URL must be an absolute HTTP or HTTPS URL`);
+    try { parsed = new URL(text); } catch (_) {
+      throw new Error(`${label}.url must be an absolute HTTP or HTTPS URL`);
     }
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      throw new Error(`CSV row ${rowNumber}: URL must be an absolute HTTP or HTTPS URL`);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error(`${label}.url must be an absolute HTTP or HTTPS URL`);
     }
     return text;
   }
 
-  return {
-    parseCsv,
-    loadPortfolio,
-    deriveAssets,
-    groupAssets,
-    summarize,
-    sortRows,
-  };
+  function yahooFinanceUrl(providerSymbol) {
+    const symbol = String(providerSymbol || "").trim();
+    return symbol ? `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}` : null;
+  }
+
+  return { loadPortfolio, deriveAssets, groupAssets, summarize, sortRows };
 });

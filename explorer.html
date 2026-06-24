@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A local, dependency-free portfolio CSV explorer.">
+  <meta name="description" content="A local, dependency-free portfolio JSON explorer.">
   <title>Portfolio Explorer</title>
   <link rel="stylesheet" href="explorer/explorer.css">
   <script defer src="explorer/model.js"></script>
@@ -29,7 +29,7 @@
         Light mode
       </button>
       <button id="replace-file" class="button button-secondary" type="button" hidden>
-        Open another CSV
+        Open another portfolio
       </button>
     </div>
   </header>
@@ -42,11 +42,11 @@
       <p class="eyebrow">No upload. No server. Your data stays local.</p>
       <h2 id="file-stage-title">Explore your portfolio from every angle.</h2>
       <p class="file-stage-copy">
-        Drop an aggregator-generated <strong>portfolio.csv</strong> here, or choose it from disk.
+        Drop an aggregator-generated <strong>portfolio.json</strong> here, or choose it from disk.
       </p>
-      <button id="choose-file" class="button button-primary" type="button">Choose portfolio CSV</button>
+      <button id="choose-file" class="button button-primary" type="button">Choose portfolio JSON</button>
       <p class="drop-hint">You can also drag and drop the file anywhere in this panel.</p>
-      <input id="file-input" type="file" accept=".csv,text/csv" hidden>
+      <input id="file-input" type="file" accept=".json,application/json" hidden>
     </section>
 
     <div id="error-banner" class="error-banner" role="alert" hidden></div>

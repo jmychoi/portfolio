@@ -1,350 +1,200 @@
-The Problem:
-============
+Portfolio Aggregator Specification
+==================================
 
-I have security holdings across multiple accounts and multiple banks.
-Analyzing my portfolio currently requires exporting holdings from each
-bank and manually combining the resulting CSV files. This process becomes
-tedious and error-prone as the portfolio grows.
+Purpose
+=======
 
-A Python script should automate parsing, normalization, aggregation, and
-report generation.
-
-
-Command-Line Interface:
-=======================
-
-The script should require exactly one portfolio directory:
-
-python aggregate.py portfolio-sample
-
-The portfolio directory has no default and must already exist. Individual CSV
-files and multiple directories are not accepted as command-line inputs.
-
-Each portfolio directory must contain an inputs subdirectory. Raw source CSVs
-are read only from <portfolio-directory>/inputs/*.csv. Discovery is
-non-recursive. The required <portfolio-directory>/inputs/config.json is also read
-from this directory. The aggregator must never create or modify files inside the
-inputs subdirectory.
-
-The default output path is <portfolio-directory>/portfolio.csv. An existing
-file at that path should be overwritten. The optional --output argument accepts
-a filename within the portfolio directory:
-
-python aggregate.py portfolio-sample --output custom.csv
-
-Managed files should be written atomically so a failed write does not leave a
-partial fx.csv or output CSV.
+The aggregator normalizes holdings exported from supported institutions and manually
+maintained real estate into one self-contained, versioned portfolio JSON document.
+The JSON document is the only portable output consumed by Portfolio Explorer.
 
 
-Input CSV Files:
-================
+Command-Line Interface
+======================
 
-The following sample files define the initially supported formats:
+Exactly one existing portfolio directory is required:
 
-- wealthsimple-sample.csv (Wealthsimple)
-- tddi-sample.csv (TD Direct Investing)
-- real-estates.csv (manually maintained real-estate holdings)
+    python aggregate.py portfolio-sample
 
-Additional banks may be added in the future. Each input format should
-therefore have an independent parser implementing a common interface.
-Adding a new format should require minimal changes outside its parser.
+The default output is <portfolio-directory>/portfolio.json. An existing file is
+atomically replaced. --output may specify a different filename in the portfolio
+directory, but the filename must use the .json extension.
 
-The real-estates.csv format should contain:
 
-Name,Market,Risk,Currency,Value,Net Monthly Income,URL
-Example Rental Property,Canada,Medium,CAD,450000,1500,https://example.com/property
+Portfolio Directory Layout
+==========================
 
-The Name field becomes the asset identifier. Market, Risk, Currency, Value, Net
-Monthly Income, and URL come directly from the row. Currency is normalized to uppercase;
-Value and Net Monthly Income are denominated in that currency. Value must be
-positive. Real-estate yield is calculated in percentage points as:
+A runnable portfolio uses this layout:
+
+    <portfolio-directory>/
+      inputs/
+        config.json
+        <holdings CSV files>
+      cache/
+        fx.csv
+        yields.csv
+      portfolio.json
+
+inputs contains user-maintained source data and configuration. The aggregator reads
+but never modifies inputs. Holdings discovery is non-recursive over inputs/*.csv;
+every discovered CSV must match exactly one registered parser.
+
+cache contains aggregator-managed, reproducible inputs. The aggregator creates the
+directory and missing cache files when necessary. Deleting a cache file explicitly
+requests a refresh on the next run.
+
+portfolio.json is the sole generated output. It must contain enough configuration,
+rates, yield provenance, metadata, and holdings to be used independently of inputs
+and cache.
+
+
+Configuration
+=============
+
+inputs/config.json contains these keys:
+
+- account_columns: ordered output account names.
+- real_estate_account: account used by real-estates.csv.
+- allowed_asset_types, allowed_markets, and allowed_risks.
+- wealthsimple_account_types: provider account type to account-column mappings.
+- td_direct_investing_accounts: account number to account column and currency.
+- assets: Type/Market/Sector/Risk metadata keyed by market asset identifier.
+
+The complete validated configuration document is embedded unchanged in
+portfolio.json under configuration.
+
+
+Input Parsers
+=============
+
+Each institution or manual format implements the common parser interface. The sample
+portfolio covers Wealthsimple, TD Direct Investing, and real-estates.csv.
+
+Real estate uses this format:
+
+    Name,Market,Risk,Currency,Value,Net Monthly Income,URL
+
+Value must be positive. Yield is calculated in percentage points as:
 
     Net Monthly Income * 12 / Value * 100
 
-Real-estate rows use Type and Sector values of Real Estate and accumulate under
-the account column named by real_estate_account in inputs/config.json.
-
-Market and Risk must occur in the corresponding allowed lists in inputs/config.json.
-Currency must have a corresponding rate in fx.csv.
-
-The inputs subdirectory must contain:
-
-- config.json (account schema, validation rules, provider mappings, TD accounts,
-  and market-asset metadata)
-
-The portfolio directory root may also contain these managed files:
-
-- fx.csv (exchange-rate cache and input)
-- yields.csv (market-yield cache and input)
-- portfolio.csv (default generated output)
-
-Managed files are outside the inputs subdirectory and are therefore excluded
-from holdings parser discovery. Every CSV inside inputs must match exactly one
-holdings parser.
+Real estate Type and Sector are Real Estate. Market, Risk, Currency, and optional
+absolute HTTP/HTTPS URL come from the row.
 
 
-Output CSV File:
-================
+JSON Output Contract
+====================
 
-The output CSV should contain these columns in this order:
+portfolio.json has this top-level shape:
 
-- Asset
-- Type (Stock, ETF, Real Estate, Cash)
-- Market (US, Canada, Asia, Global)
-- Sector (Technology, Cash, Real Estate, Mixed, Finance, Utility,
-  Energy, Retail)
-- Risk (High, Medium, Low)
-- Currency (USD, CAD)
-- FX Rate CAD
-- Yield
-- Total
-- Total CAD
-- % Holding
-- Projected Annual Income
-- URL
-- The account columns from config.json, in their configured order
+    {
+      "schemaVersion": 1,
+      "configuration": { ...complete config.json... },
+      "exchangeRates": { ... },
+      "yields": { ... },
+      "supplementalAssets": { ... },
+      "holdings": [ ... ]
+    }
 
-Each asset identifier should occur exactly once. Each row aggregates that asset
-across all banks and accounts. Asset identifiers may be market ticker symbols or
-special identifiers such as real-estate names and CASH-CAD.
+schemaVersion is required and currently equals 1.
 
-Account columns and Total should contain values in the detail row's native
-currency. Total CAD should contain the same value converted to CAD.
+exchangeRates is keyed by currency. Each value contains:
 
-% Holding should be calculated as:
+- rateToCad: positive numeric conversion rate.
+- date: ISO observation date or null.
+- source: provenance text or null.
 
-    row Total CAD / portfolio Total CAD * 100
+yields is keyed by asset. Each value contains:
 
-The denominator should include securities, cash, and real estate.
+- providerSymbol: provider identifier or null.
+- percent: yield in percentage points or null when unavailable.
+- asOf: ISO date or null.
+- source: provenance text or null.
+- status: cache or derivation status.
 
-Monetary, yield, and percentage output fields should be rounded using standard
-half-up rounding and written with exactly two decimal places. FX Rate CAD should
-preserve the configured Decimal precision. Calculations and sorting should use
-unrounded internal Decimal values; rounding otherwise applies only when serializing
-output. Yield is blank when it is unknown.
+Market-yield records reproduce the complete yields cache, including cached assets not
+currently held. CASH-CAD and CASH-USD receive fixed zero-yield records. Real-estate
+yields receive derived records.
 
-Projected Annual Income is expressed in CAD and calculated from unrounded
-internal values as:
+supplementalAssets contains metadata only for assets not represented in
+configuration.assets. It therefore contains built-in cash assets and real estate.
+Each record contains type, market, sector, and risk. Real estate may additionally
+contain url. Market URLs are not duplicated: Explorer derives them from the yield
+record's providerSymbol.
 
-    Yield / 100 * Total CAD
+holdings contains one record per asset:
 
-URL is optional and must be blank or an absolute HTTP/HTTPS URL. For stocks and ETFs,
-the aggregator generates a Yahoo Finance URL from the cached Provider Symbol. For
-real estate, URL comes from real-estates.csv. Cash URL is blank. URL is the final
-fixed column immediately before the trailing account block.
+    {
+      "asset": "MSFT",
+      "currency": "USD",
+      "accounts": {
+        "RRSP": 15000,
+        "TFSA": 8000
+      }
+    }
+
+Only nonzero account values are emitted. Missing configured accounts mean zero.
+Holding records do not duplicate Type, Market, Sector, Risk, yield, URL, or exchange
+rate information.
+
+The output deliberately excludes Total, Total CAD, % Holding, and Projected Annual
+Income. These are presentation-dependent derived values calculated by Explorer from
+the selected accounts.
 
 
-Cash Holdings:
-==============
+Cash Holdings
+=============
 
-The output must always contain the following special asset rows, even
-when their values are zero:
-
-- CASH-CAD
-- CASH-USD
-
-TD Direct Investing cash balances should accumulate into the appropriate
-special cash row based on the account's configured base currency.
-
-The special cash rows should use:
+CASH-CAD and CASH-USD holdings always exist, even when all account values are zero.
+Their metadata is built in:
 
 - Type: Cash
 - Sector: Cash
 - Risk: Low
 - Yield: 0
-- Currency: CAD or USD, according to the asset suffix
-- Market: Canada for CASH-CAD and US for CASH-USD
+- CASH-CAD: Canada and CAD
+- CASH-USD: US and USD
 
 
-Field Mapping Rules:
-====================
+Exchange-Rate Cache
+===================
 
-Bank security assets require deterministic asset-based mappings for:
+cache/fx.csv uses:
 
-- Type
-- Market
-- Sector
-- Risk
+    Currency,Rate CAD,Date,Source
 
-The required <portfolio-directory>/inputs/config.json should define one explicit
-metadata record per market asset containing all four classifications. It should cover
-every bank security found in that portfolio's input files and use best-effort
-security information.
+CAD must exist with rate 1 and USD must exist. Codes are uppercase, rates are
+positive Decimals, duplicates are invalid, and dates use ISO YYYY-MM-DD.
 
-If a bank input contains an unmapped asset, the script should fail with a
-clear error instead of silently guessing or producing an incomplete row.
-
-Real-estate assets do not require classification mappings. Their Market, Risk,
-and Currency values come from real-estates.csv; Type and Sector are fixed to
-Real Estate.
-
-Currency is not maintained as an asset classification mapping. It comes from
-the Wealthsimple Market Value Currency field, the configured TD account base
-currency, the real-estate row, or the CASH-CAD/CASH-USD asset suffix.
+If cache/fx.csv is missing, the latest FXUSDCAD observation is fetched from the Bank
+of Canada Valet API and the complete cache is written atomically. Existing cache
+files are always reused.
 
 
-Yield:
-======
-
-Real-estate yield is derived from Value and Net Monthly Income in
-inputs/real-estates.csv. CASH-CAD and CASH-USD always have a yield of 0.
-
-Stock and ETF yields should be obtained through yfinance and cached in
-<portfolio-directory>/yields.csv using this format:
-
-Asset,Provider Symbol,Yield,As Of,Source,Status
-MSFT,MSFT,0.96,2026-06-18,yfinance,ok
-BMO,BMO.TO,2.76,2026-06-19,yfinance,ok
-
-For each stock or ETF, request one year of unadjusted price and distribution
-history. Calculate annualized latest-distribution yield as:
-
-    latest positive distribution
-    * number of positive distributions during the previous year
-    / latest available closing price
-    * 100
-
-A valid asset with no positive distributions during the previous year has a
-yield of 0. A failed or unavailable lookup has a blank yield and an unavailable
-status; it must not be treated as zero.
-
-US provider symbols normally match Asset. CAD securities use a .TO suffix.
-Canadian .U securities are translated to Yahoo's -U.TO form. Provider symbols
-are persisted in yields.csv and may be manually corrected there.
-
-Existing cache rows are reused without network access. Missing assets are
-looked up and appended atomically. Deleting one row retries that asset on the
-next run; deleting yields.csv refreshes all market yields. Manual edits to cached
-yield values are authoritative. To retry using a corrected provider symbol, edit
-Provider Symbol and set Status to refresh.
-
-The implementation depends on the yfinance version pinned in
-aggregator/requirements.txt.
-
-
-Account Mapping Rules:
-======================
-
-Wealthsimple provides an Account Type column. Every supported provider account type
-should map to one of the configured output columns through
-wealthsimple_account_types in inputs/config.json.
-
-Wealthsimple holdings do not have an account-level base currency. The
-currency of each Wealthsimple holding should come from its exported
-Market Value Currency field.
-
-TD Direct Investing exports are per-account. The account number should
-be extracted from the Account metadata inside the file.
-
-Each TD account should be configured in inputs/config.json with its output account
-column and base currency. The sample configuration should include SAMPLE123 mapped
-to Sample A with USD as its base currency.
-
-inputs/config.json should use this structure:
-
-    {
-      "account_columns": [
-        "Sample A",
-        "Sample B",
-        "Sample Property"
-      ],
-      "real_estate_account": "Sample Property",
-      "allowed_asset_types": ["Stock", "ETF"],
-      "allowed_markets": ["US", "Canada", "Asia", "Global"],
-      "allowed_risks": ["High", "Medium", "Low"],
-      "wealthsimple_account_types": {
-        "Non-registered": "Sample A",
-        "TFSA": "Sample B"
-      },
-      "td_direct_investing_accounts": {
-        "SAMPLE123": { "account": "Sample A", "currency": "USD" }
-      },
-      "assets": {
-        "MSFT": {
-          "type": "Stock",
-          "market": "US",
-          "sector": "Technology",
-          "risk": "Medium"
-        }
-      }
-    }
-
-The order of account_columns controls the trailing account-column order in
-portfolio.csv. Account names have no required suffix.
-The configuration must reject duplicate JSON keys or list values, missing or unknown
-fields, unknown account columns, unsupported Type/Market/Risk values, empty sectors,
-and attempts to override the built-in CASH-CAD or CASH-USD metadata.
-real_estate_account must name one of the configured account columns. The allowed
-Market and Risk lists must support the built-in cash metadata.
-
-The configured TD base currency applies to both the account's cash
-balance and all security market values in that account.
-
-Unknown account types, account numbers, or account currencies should
-produce a clear error.
-
-
-Exchange Rates:
-===============
-
-Exchange rates should be loaded from <portfolio-directory>/fx.csv using this
-format:
-
-Currency,Rate CAD,Date,Source
-CAD,1,,
-USD,1.4171,2026-06-19,Bank of Canada
-
-If fx.csv is missing, the script should request the latest FXUSDCAD observation
-from the Bank of Canada Valet JSON API at:
-
-https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1
-
-The script should validate the response and atomically create fx.csv. It should
-then load the file through the same code path used for an existing file. The
-fetched observation is the latest rate available when the portfolio directory
-is first processed; the directory name is not interpreted as a date.
-
-An existing fx.csv should always be reused. It is never refreshed or silently
-replaced. Deleting it explicitly causes the next run to fetch a new rate.
-
-fx.csv must contain CAD with a rate of 1 and must contain USD. Currency codes
-are normalized to uppercase, rates must be positive Decimals, duplicate
-currencies are invalid, and non-empty dates must use ISO YYYY-MM-DD format.
-
-If the API request or validation fails, the script should fail clearly without
-creating a partial fx.csv.
-
-For a detail row:
-
-- Total is the sum across account columns in the row's native currency.
-- FX Rate CAD is the configured rate for the row's currency.
-- Total CAD is Total multiplied by the configured CAD exchange rate.
-
-
-Output Sorting:
-===============
-
-Rows should be sorted by the unrounded % Holding value in descending order.
-Asset should be used as an alphabetical tie-breaker. CASH-CAD and
-CASH-USD participate in the same ordering and are not pinned to special
-positions.
-
-
-Validation:
+Yield Cache
 ===========
 
-The script should fail clearly when:
+cache/yields.csv uses:
 
-- inputs/config.json is missing, malformed, or invalid.
-- An input file does not match exactly one supported parser.
-- The required inputs subdirectory is missing or contains no CSV files.
-- A bank security is missing deterministic mappings.
-- An account type or TD account number is unmapped.
-- A currency lacks a CAD exchange rate in fx.csv.
-- A real-estate Value or Net Monthly Income is non-numeric, or Value is not positive.
-- A real-estate URL uses an unsupported or non-absolute scheme.
-- A cached market yield is negative or non-numeric.
-- yields.csv is malformed or contains duplicate assets.
-- fx.csv is malformed or missing required CAD/USD rates.
-- The Bank of Canada request or response fails while creating fx.csv.
-- A required numeric value cannot be parsed.
+    Asset,Provider Symbol,Yield,As Of,Source,Status
+
+Stocks and ETFs missing from the cache are fetched through yfinance. The annualized
+latest-distribution yield is:
+
+    latest positive distribution
+    * number of positive distributions in the previous year
+    / latest closing price
+    * 100
+
+No distributions means zero yield. Provider failure means a null output yield and
+unavailable status, not zero. Existing rows are authoritative. A row with refresh
+status is fetched again using its cached provider symbol. Writes are atomic.
+
+
+Validation
+==========
+
+The aggregator fails clearly for missing directories/configuration, ambiguous parser
+matches, unmapped accounts or assets, inconsistent asset metadata/currency/yield/URL,
+invalid numbers or URLs, missing FX currencies, malformed cache files, and provider
+request/response failures. A failed managed-file write must not leave a partial file.

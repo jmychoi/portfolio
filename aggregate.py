@@ -1,10 +1,14 @@
 import argparse
 from pathlib import Path
 
-from aggregator.asset_urls import yahoo_finance_url
-from aggregator.config import load_portfolio_config
+from aggregator.config import load_portfolio_config, load_portfolio_config_document
 from aggregator.exchange_rates import ensure_fx_file, load_fx_file
-from aggregator.service import aggregate, discover_csv_files, parse_files, write_csv
+from aggregator.service import (
+    build_portfolio_document,
+    discover_csv_files,
+    parse_files,
+    write_portfolio_json,
+)
 from aggregator.yields import ensure_yields_file, load_yields_file, market_assets
 
 
@@ -14,11 +18,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "portfolio_directory", type=Path,
-        help="directory containing source CSVs, fx.csv, and generated portfolio.csv",
+        help="directory containing inputs, cache, and generated portfolio.json",
     )
     parser.add_argument(
-        "--output", "-o", default="portfolio.csv",
-        help="output filename within the portfolio directory (default: portfolio.csv)",
+        "--output", "-o", default="portfolio.json",
+        help="output filename within the portfolio directory (default: portfolio.json)",
     )
     return parser
 
@@ -32,33 +36,24 @@ def main() -> None:
     output_name = Path(args.output)
     if output_name.is_absolute() or output_name.name != args.output:
         parser.error("--output must be a filename within the portfolio directory")
-    if output_name.name.lower() in {"fx.csv", "yields.csv"}:
-        parser.error("--output cannot overwrite a managed data file")
+    if output_name.suffix.lower() != ".json":
+        parser.error("--output must use the .json extension")
 
     output_path = portfolio_directory / output_name
     portfolio_config = load_portfolio_config(portfolio_directory)
+    configuration = load_portfolio_config_document(portfolio_directory)
     fx_path = ensure_fx_file(portfolio_directory)
     fx_records = load_fx_file(fx_path)
-    exchange_rates = {
-        currency: record.rate_to_cad for currency, record in fx_records.items()
-    }
     paths = discover_csv_files(portfolio_directory)
     holdings = parse_files(paths, portfolio_config)
     yield_path = ensure_yields_file(
         portfolio_directory, market_assets(holdings, portfolio_config.assets)
     )
     yield_records = load_yields_file(yield_path)
-    market_yields = {
-        asset: record.yield_percent for asset, record in yield_records.items()
-    }
-    market_urls = {
-        asset: yahoo_finance_url(record.provider_symbol)
-        for asset, record in yield_records.items()
-    }
-    rows = aggregate(
-        holdings, exchange_rates, portfolio_config, market_yields, market_urls
+    document = build_portfolio_document(
+        holdings, fx_records, portfolio_config, configuration, yield_records
     )
-    write_csv(rows, output_path, portfolio_config.account_columns)
+    write_portfolio_json(document, output_path)
 
     usd = fx_records["USD"]
     provenance = f" from {usd.observation_date}" if usd.observation_date else ""
@@ -71,7 +66,7 @@ def main() -> None:
     )
     if unavailable:
         print(f"Yield unavailable for: {', '.join(unavailable)}")
-    print(f"Wrote {len(rows)} holdings to {output_path}")
+    print(f"Wrote {len(document['holdings'])} holdings to {output_path}")
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ CASH_METADATA = {
 }
 
 
-def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
+def load_portfolio_config_document(portfolio_directory: Path) -> dict:
     path = portfolio_directory / CONFIG_RELATIVE_PATH
     if not path.is_file():
         raise ValueError(f"Portfolio configuration does not exist: {path}")
@@ -54,6 +54,12 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
 
     if not isinstance(raw, dict):
         raise ValueError(f"{path}: top-level value must be an object")
+    return raw
+
+
+def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
+    path = portfolio_directory / CONFIG_RELATIVE_PATH
+    raw = load_portfolio_config_document(portfolio_directory)
     expected = {
         "account_columns",
         "real_estate_account",

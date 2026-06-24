@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "configuration": {
+    "account_columns": [
+      "Sample A",
+      "Sample B",
+      "Sample Property"
+    ],
+    "real_estate_account": "Sample Property",
+    "allowed_asset_types": [
+      "Stock",
+      "ETF"
+    ],
+    "allowed_markets": [
+      "US",
+      "Canada",
+      "Asia",
+      "Global"
+    ],
+    "allowed_risks": [
+      "High",
+      "Medium",
+      "Low"
+    ],
+    "wealthsimple_account_types": {
+      "Non-registered": "Sample A",
+      "TFSA": "Sample B"
+    },
+    "td_direct_investing_accounts": {
+      "SAMPLE123": {
+        "account": "Sample A",
+        "currency": "USD"
+      }
+    },
+    "assets": {
+      "BMO": {
+        "type": "Stock",
+        "market": "Canada",
+        "sector": "Finance",
+        "risk": "Medium"
+      },
+      "GOOG": {
+        "type": "Stock",
+        "market": "US",
+        "sector": "Technology",
+        "risk": "Medium"
+      },
+      "MSFT": {
+        "type": "Stock",
+        "market": "US",
+        "sector": "Technology",
+        "risk": "Medium"
+      },
+      "SGOV": {
+        "type": "ETF",
+        "market": "US",
+        "sector": "Cash",
+        "risk": "Low"
+      }
+    }
+  },
+  "exchangeRates": {
+    "CAD": {
+      "rateToCad": 1,
+      "date": null,
+      "source": null
+    },
+    "USD": {
+      "rateToCad": 1.4,
+      "date": "2026-01-02",
+      "source": "Synthetic sample"
+    }
+  },
+  "yields": {
+    "BMO": {
+      "providerSymbol": "BMO.TO",
+      "percent": 4.5,
+      "asOf": "2026-01-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "GOOG": {
+      "providerSymbol": "GOOG",
+      "percent": 0.5,
+      "asOf": "2026-01-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "MSFT": {
+      "providerSymbol": "MSFT",
+      "percent": 0.75,
+      "asOf": "2026-01-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "SGOV": {
+      "providerSymbol": "SGOV",
+      "percent": 4.2,
+      "asOf": "2026-01-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "CASH-CAD": {
+      "providerSymbol": null,
+      "percent": 0,
+      "asOf": null,
+      "source": "built-in",
+      "status": "fixed"
+    },
+    "CASH-USD": {
+      "providerSymbol": null,
+      "percent": 0,
+      "asOf": null,
+      "source": "built-in",
+      "status": "fixed"
+    },
+    "Example Rental Property": {
+      "providerSymbol": null,
+      "percent": 4,
+      "asOf": null,
+      "source": "real-estate",
+      "status": "derived"
+    }
+  },
+  "supplementalAssets": {
+    "CASH-CAD": {
+      "type": "Cash",
+      "market": "Canada",
+      "sector": "Cash",
+      "risk": "Low"
+    },
+    "CASH-USD": {
+      "type": "Cash",
+      "market": "US",
+      "sector": "Cash",
+      "risk": "Low"
+    },
+    "Example Rental Property": {
+      "type": "Real Estate",
+      "market": "Canada",
+      "sector": "Real Estate",
+      "risk": "Medium",
+      "url": "https://example.com/sample-property"
+    }
+  },
+  "holdings": [
+    {
+      "asset": "BMO",
+      "currency": "CAD",
+      "accounts": {
+        "Sample B": 22000
+      }
+    },
+    {
+      "asset": "CASH-CAD",
+      "currency": "CAD",
+      "accounts": {}
+    },
+    {
+      "asset": "CASH-USD",
+      "currency": "USD",
+      "accounts": {
+        "Sample A": 2500
+      }
+    },
+    {
+      "asset": "Example Rental Property",
+      "currency": "CAD",
+      "accounts": {
+        "Sample Property": 450000
+      }
+    },
+    {
+      "asset": "GOOG",
+      "currency": "USD",
+      "accounts": {
+        "Sample A": 1750
+      }
+    },
+    {
+      "asset": "MSFT",
+      "currency": "USD",
+      "accounts": {
+        "Sample A": 12500
+      }
+    },
+    {
+      "asset": "SGOV",
+      "currency": "USD",
+      "accounts": {
+        "Sample A": 2000
+      }
+    }
+  ]
+}

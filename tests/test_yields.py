@@ -40,6 +40,7 @@ class YieldTests(unittest.TestCase):
                 Path(directory), {"MSFT": "MSFT"},
                 fetcher=lambda assets: {"MSFT": expected},
             )
+            self.assertEqual(path, Path(directory) / "cache" / "yields.csv")
             self.assertEqual(load_yields_file(path)["MSFT"], expected)
 
     def test_cached_assets_are_not_fetched_again(self):
@@ -79,7 +80,10 @@ class YieldTests(unittest.TestCase):
 
             ensure_yields_file(portfolio_directory, {"ASSET": "DEFAULT"}, fetcher=refresh)
             self.assertEqual(observed, {"ASSET": "CUSTOM"})
-            self.assertEqual(load_yields_file(portfolio_directory / "yields.csv")["ASSET"], refreshed)
+            self.assertEqual(
+                load_yields_file(portfolio_directory / "cache" / "yields.csv")["ASSET"],
+                refreshed,
+            )
 
 
 if __name__ == "__main__":

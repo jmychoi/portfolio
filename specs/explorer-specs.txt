@@ -1,127 +1,102 @@
 Portfolio Explorer Specification
 ================================
 
-1. Purpose
-----------
+Purpose and Runtime
+===================
 
-Portfolio Explorer is a dependency-free browser UI for examining a portfolio CSV
-created by the portfolio aggregator. It supports account filtering, grouping,
-sorting, a data table, a pie chart, and an FX-rate summary.
+Portfolio Explorer is a dependency-free static browser UI for portfolio.json files
+created by the aggregator. The user opens explorer.html directly and chooses or drops
+exactly one JSON file. Data remains local to the browser tab. No server, package
+manager, build step, or third-party library is required.
 
-2. Runtime and file layout
---------------------------
 
-- The entry page is `explorer.html` at the project root, parallel to `aggregate.py`.
-- Implementation files are `explorer/explorer.css`, `explorer/explorer.js`, and
-  `explorer/model.js`.
-- The application uses only HTML, CSS, and JavaScript supplied by the project. It
-  requires no web server, package manager, build step, or third-party dependency.
-- The user opens `explorer.html` directly and selects or drops exactly one CSV.
-- Portfolio data is read locally in the browser and is not uploaded or transmitted.
+Input Contract
+==============
 
-3. Input contract
------------------
+Only versioned JSON is supported; CSV is not supported. The document must contain:
 
-- Input is a CSV produced by the aggregator.
-- Asset metadata includes Asset, Type, Market, Sector, Risk, Currency, FX Rate CAD,
-  Yield, and URL.
-- Account holdings are every trailing column after URL. Account
-  names have no required suffix.
-- The aggregator's Total, Total CAD, % Holding, and Projected Annual Income columns
-  are not treated as display results. FX Rate CAD is the authoritative conversion
-  rate for each row.
-- Invalid or unsupported input must produce a visible error instead of a partial
-  dashboard.
-- URL must be blank or an absolute HTTP/HTTPS URL. When present, the Asset label is
-  an external link opened in a new tab with noopener/noreferrer protection.
+- schemaVersion 1.
+- configuration with a non-empty, unique account_columns array and asset metadata.
+- exchangeRates keyed by currency with positive rateToCad values.
+- yields keyed by asset.
+- supplementalAssets for cash and real-estate metadata.
+- holdings with unique asset identifiers, currency, and account-value objects.
 
-4. Initial state and file replacement
--------------------------------------
+Holding account keys must occur in configuration.account_columns. Missing accounts
+are treated as zero. Every holding must resolve to exactly one metadata record from
+configuration.assets or supplementalAssets. Duplicate metadata is invalid.
 
-- Dark mode is the default when no saved theme preference exists.
-- Before loading a CSV, the launch panel provides file selection and drag-and-drop.
-- After loading a CSV, the launch panel is hidden completely and an
-  `Open another CSV` button is available in the header.
-- All discovered account columns are selected initially.
-- The initial grouping is `None`.
+Yield percent may be numeric or null. Market URLs are derived from providerSymbol.
+Supplemental URLs must be blank or absolute HTTP/HTTPS URLs.
 
-5. Account selection
---------------------
+Malformed JSON, unsupported schema versions, missing metadata/rates, duplicate
+assets/accounts, invalid numbers, unknown accounts, and unsafe URLs produce a visible
+error instead of a partial dashboard.
 
-- Each discovered account has an independent checkbox.
-- Select all selects every account; Clear all deselects every account.
-- Select all, Clear all, and the account buttons share one horizontally wrapping row.
-- Account selection has no name-based or semantic rules.
 
-6. Dynamic calculations
-------------------------
+Dynamic Calculations
+====================
 
-All displayed portfolio measures are recalculated from the selected accounts:
+All values are calculated for the currently selected accounts:
 
-    Total = sum of selected account values
-    Total CAD = Total * FX Rate CAD
+    Total = sum of selected native-currency account values
+    Total CAD = Total * exchangeRates[currency].rateToCad
     % Holding = Total CAD / selected portfolio Total CAD * 100
     Projected Annual Income = Total CAD * Yield / 100
 
-- FX Rate CAD must be positive and consistent across rows of the same currency.
-- Grouped Total CAD and Projected Annual Income are sums of member assets.
-- Grouped Yield is weighted by CAD market value among assets with known yields.
-- Grouped % Holding is recalculated against the selected portfolio's Total CAD.
+Unknown yield produces unknown projected income. Grouped Total CAD and income are
+sums of member assets. Grouped yield is CAD-value-weighted among assets with known
+yields. Grouped holding percentage is recalculated against the selected portfolio.
 
-7. Grouping and views
----------------------
 
+Interaction
+===========
+
+- All configured accounts are selected initially.
+- Select All and Clear All controls update account selection.
 - Grouping choices are None, Type, Market, Sector, Risk, and Currency.
-- With grouping set to None, the table displays individual assets and the pie chart
-  groups by Sector.
-- With any other grouping, both the table and pie chart use that grouping.
-- The table and pie chart are visible together; they stack responsively on narrow
-  screens.
-- The pie chart is rendered without a third-party charting library.
-- A read-only FX-rate table appears below the pie chart and lists explicit CAD rates.
+- None shows assets in the table and groups the pie chart by Sector.
+- Other grouping choices apply to both table and chart.
+- Table headings support ascending/descending sorting; Shift-click creates a
+  multi-column sort.
+- Table and pie chart are visible together and stack responsively when narrow.
+- The read-only FX table lists rates embedded in portfolio.json.
+- Asset labels link to derived or supplemental URLs when available.
 
-8. Sorting and totals
----------------------
 
-- Clicking a table heading sorts by that column.
-- Shift-clicking headings creates or extends a multi-column sort.
-- Each sort key supports ascending and descending order.
-- The TOTAL row is excluded from sorting and remains a sticky table footer.
-- The TOTAL row recalculates Total CAD, weighted Yield, % Holding, and Projected
-  Annual Income for the current selection. Native-currency totals are blank when
-  they would combine currencies.
-- Each selected account column in the TOTAL row shows that account's CAD-converted
-  total; the Total CAD column shows their combined value.
-- In the individual-asset table, Yield appears immediately before Projected Income.
-- The individual-asset table shows fixed metadata and calculated columns first,
-  followed by the trailing account columns in CSV order.
-- Account-column headings include a small decorative wallet icon, and the first
-  account column has a visual divider from the fixed portfolio columns. Account
-  names remain the accessible heading labels.
-- Account names are displayed exactly as configured; the Explorer does not shorten,
-  rename, or otherwise transform them.
+Table and Totals
+================
 
-9. Formatting and layout
-------------------------
+The asset table displays Asset, Type, Market, Sector, Risk, Currency, dynamically
+calculated Total, Total CAD, % Holding, Yield, Projected Income, and configured
+accounts. Yield appears immediately before Projected Income.
 
-- Monetary values are displayed as whole dollars with grouping separators.
-- Percentages retain at most two decimal places.
-- FX rates retain enough decimal precision to remain useful.
-- Dark and light themes are available from the header toggle.
-- Forest (the original palette), Ocean, Aubergine, and Amber color schemes are
-  selectable independently of light/dark mode.
-- Theme and color-scheme preferences are persisted when browser storage is available.
-- The dashboard has no fixed desktop maximum width and expands with the viewport.
-- The table viewport scales with browser height instead of using a fixed pixel cap.
-- After loading a CSV, the desktop dashboard fits within the current browser height.
-  Overflow scrolls within the relevant panel rather than extending the page; narrow
-  layouts use an internally scrolling main region when stacking requires more room.
+The sticky TOTAL footer is excluded from sorting. Each selected account column shows
+its CAD-converted total. Total CAD shows the combined selected value. Weighted Yield,
+% Holding, and Projected Income are recalculated dynamically. Native Total remains
+blank when it would mix currencies.
 
-10. Verification
-----------------
 
-The pure JavaScript data model is covered by Node's built-in test runner:
+Formatting and Layout
+=====================
+
+- Monetary values display as whole dollars with separators.
+- Percentages use at most two decimal places.
+- FX rates retain useful precision.
+- Dark mode is the default; light mode is available.
+- Forest, Ocean, Aubergine, and Amber color schemes are independent of theme.
+- Theme and color scheme persist when browser storage is available.
+- The dashboard expands to browser width and fits desktop browser height.
+- Overflow scrolls inside the relevant panel; narrow layouts use an internally
+  scrolling main region.
+- The launch panel disappears after loading; Open another portfolio replaces input.
+
+
+Verification
+============
+
+The pure JavaScript model is tested with:
 
     node --test tests\model.test.js
 
-The Explorer must remain usable when opened directly as a local file.
+Explorer must remain usable when opened directly as a local file.

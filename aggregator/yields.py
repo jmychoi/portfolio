@@ -12,6 +12,7 @@ from aggregator.models import Holding
 
 
 YIELD_COLUMNS = ("Asset", "Provider Symbol", "Yield", "As Of", "Source", "Status")
+CACHE_RELATIVE_PATH = Path("cache") / "yields.csv"
 
 
 @dataclass(frozen=True)
@@ -51,7 +52,7 @@ def yfinance_symbol(asset: str, currency: str) -> str:
 
 
 def ensure_yields_file(portfolio_directory: Path, assets: dict[str, str], fetcher=None) -> Path:
-    path = portfolio_directory / "yields.csv"
+    path = portfolio_directory / CACHE_RELATIVE_PATH
     records = load_yields_file(path) if path.exists() else {}
     missing = {asset: symbol for asset, symbol in assets.items() if asset not in records}
     for asset, record in records.items():

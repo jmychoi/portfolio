@@ -3,7 +3,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aggregator.config import AssetMetadata, TddiAccount, load_portfolio_config
+from aggregator.config import (
+    AssetMetadata,
+    TddiAccount,
+    load_portfolio_config,
+    load_portfolio_config_document,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +37,11 @@ class PortfolioConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "configuration does not exist"):
                 load_portfolio_config(Path(directory))
+
+    def test_complete_configuration_document_is_available_for_snapshot(self):
+        document = load_portfolio_config_document(ROOT / "portfolio-sample")
+        self.assertEqual(document["real_estate_account"], "Sample Property")
+        self.assertIn("MSFT", document["assets"])
 
     def test_duplicate_json_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

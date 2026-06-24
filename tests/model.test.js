@@ -4,55 +4,78 @@ const path = require("node:path");
 
 const Model = require(path.join(__dirname, "..", "explorer", "model.js"));
 
-const CSV = [
-  "Asset,Type,Market,Sector,Risk,Currency,FX Rate CAD,Yield,Total,Total CAD,% Holding,Projected Annual Income,URL,Cash,Cash (Joint),RRSP,RRSP (Spousal),LIRA",
-  '"Fund, A",ETF,US,Mixed,Medium,USD,1.4,4.00,160,224,0,0,https://finance.yahoo.com/quote/FUND,100,50,0,10,0',
-  "Bank,Stock,Canada,Finance,Low,CAD,1,2.00,350,350,0,0,,200,0,100,0,50",
-].join("\n");
+const DOCUMENT = {
+  schemaVersion: 1,
+  configuration: {
+    account_columns: ["Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA"],
+    assets: {
+      "Fund, A": { type: "ETF", market: "US", sector: "Mixed", risk: "Medium" },
+      Bank: { type: "Stock", market: "Canada", sector: "Finance", risk: "Low" },
+    },
+  },
+  exchangeRates: {
+    CAD: { rateToCad: 1, date: null, source: null },
+    USD: { rateToCad: 1.4, date: "2026-06-19", source: "Bank of Canada" },
+  },
+  yields: {
+    "Fund, A": { providerSymbol: "FUND", percent: 4, asOf: null, source: "test", status: "ok" },
+    Bank: { providerSymbol: "BANK.TO", percent: 2, asOf: null, source: "test", status: "ok" },
+  },
+  supplementalAssets: {},
+  holdings: [
+    { asset: "Fund, A", currency: "USD", accounts: { Cash: 100, "Cash (Joint)": 50, "RRSP (Spousal)": 10 } },
+    { asset: "Bank", currency: "CAD", accounts: { Cash: 200, RRSP: 100, LIRA: 50 } },
+  ],
+};
 
-test("CSV parser handles quoted commas", () => {
-  const rows = Model.parseCsv(CSV);
-  assert.equal(rows[1][0], "Fund, A");
+function json(document = DOCUMENT) {
+  return JSON.stringify(document);
+}
+
+function copyDocument() {
+  return JSON.parse(json());
+}
+
+test("portfolio loader rejects malformed JSON", () => {
+  assert.throws(() => Model.loadPortfolio("not json"), /not valid JSON/);
 });
 
-test("portfolio loader discovers accounts and reads explicit exchange rates", () => {
-  const portfolio = Model.loadPortfolio(CSV);
-  assert.deepEqual(portfolio.accounts, [
-    "Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA",
-  ]);
+test("portfolio loader reads accounts, rates, metadata, yields, and derived URLs", () => {
+  const portfolio = Model.loadPortfolio(json());
+  assert.deepEqual(portfolio.accounts, ["Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA"]);
   assert.equal(portfolio.rates.CAD, 1);
   assert.equal(portfolio.rates.USD, 1.4);
   assert.equal(portfolio.rows[0].url, "https://finance.yahoo.com/quote/FUND");
-  assert.equal(portfolio.rows[1].url, null);
+  assert.equal(portfolio.rows[1].yieldPct, 2);
 });
 
-test("portfolio loader rejects unsafe asset URLs", () => {
-  assert.throws(
-    () => Model.loadPortfolio(CSV.replace("https://finance.yahoo.com/quote/FUND", "javascript:alert(1)")),
-    /absolute HTTP or HTTPS URL/
-  );
+test("portfolio loader rejects unsafe supplemental asset URLs", () => {
+  const document = copyDocument();
+  document.supplementalAssets.Property = {
+    type: "Real Estate", market: "Canada", sector: "Real Estate", risk: "Medium",
+    url: "javascript:alert(1)",
+  };
+  document.holdings.push({ asset: "Property", currency: "CAD", accounts: { Cash: 100 } });
+  assert.throws(() => Model.loadPortfolio(json(document)), /absolute HTTP or HTTPS URL/);
 });
 
-test("trailing account columns do not require an Account suffix", () => {
-  const csv = CSV
-    .replace("Cash (Joint)", "Beta")
-    .replace("RRSP (Spousal)", "Delta")
-    .replace("Cash", "Alpha")
-    .replace("RRSP", "Gamma")
-    .replace("LIRA", "Epsilon");
-  assert.deepEqual(Model.loadPortfolio(csv).accounts, [
-    "Alpha", "Beta", "Gamma", "Delta", "Epsilon",
-  ]);
+test("account names are data-driven", () => {
+  const document = copyDocument();
+  document.configuration.account_columns = ["Alpha", "Beta"];
+  document.holdings[0].accounts = { Alpha: 100 };
+  document.holdings[1].accounts = { Beta: 200 };
+  assert.deepEqual(Model.loadPortfolio(json(document)).accounts, ["Alpha", "Beta"]);
 });
 
 test("explicit rates remain available when a currency has only zero-value rows", () => {
-  const csv = CSV.replace("160,224", "0,0").replace("100,50,0,10,0", "0,0,0,0,0");
-  const portfolio = Model.loadPortfolio(csv);
+  const document = copyDocument();
+  document.holdings[0].accounts = {};
+  const portfolio = Model.loadPortfolio(json(document));
   assert.equal(portfolio.rates.USD, 1.4);
 });
 
 test("selected accounts dynamically recalculate totals and income", () => {
-  const portfolio = Model.loadPortfolio(CSV);
+  const portfolio = Model.loadPortfolio(json());
   const derived = Model.deriveAssets(portfolio, new Set(["Cash (Joint)"]));
   assert.equal(derived.rows.length, 1);
   assert.equal(derived.rows[0].asset, "Fund, A");
@@ -64,10 +87,9 @@ test("selected accounts dynamically recalculate totals and income", () => {
 });
 
 test("grouping recalculates weighted yield and portfolio share", () => {
-  const portfolio = Model.loadPortfolio(CSV);
+  const portfolio = Model.loadPortfolio(json());
   const derived = Model.deriveAssets(portfolio, new Set(portfolio.accounts));
-  const groups = Model.groupAssets(derived, "Market");
-  const us = groups.find((group) => group.label === "US");
+  const us = Model.groupAssets(derived, "Market").find((group) => group.label === "US");
   assert.equal(us.assetCount, 1);
   assert.equal(us.totalCad, 224);
   assert.equal(us.yieldPct, 4);
