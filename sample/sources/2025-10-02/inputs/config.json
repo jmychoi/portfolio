@@ -1,0 +1,26 @@
+{
+  "account_columns": [
+    "Sample Joint",
+    "Sample Registered",
+    "Sample Property"
+  ],
+  "real_estate_account": "Sample Property",
+  "allowed_asset_types": ["Stock", "ETF"],
+  "allowed_markets": ["US", "Canada", "Global"],
+  "allowed_risks": ["High", "Medium", "Low"],
+  "allowed_currencies": ["CAD", "USD"],
+  "wealthsimple_account_types": {
+    "Non-registered": "Sample Joint",
+    "TFSA": "Sample Registered"
+  },
+  "td_direct_investing_accounts": {
+    "DEMOUSD": { "account": "Sample Joint", "currency": "USD" }
+  },
+  "assets": {
+    "FAKEAI": { "type": "Stock", "market": "US", "sector": "Technology", "risk": "High", "currency": "USD" },
+    "FAKEBANK": { "type": "Stock", "market": "Canada", "sector": "Finance", "risk": "Medium", "currency": "CAD" },
+    "FUNDCA": { "type": "ETF", "market": "Canada", "sector": "Broad Market", "risk": "Medium", "currency": "CAD" },
+    "FUNDGLB": { "type": "ETF", "market": "Global", "sector": "Broad Market", "risk": "Medium", "currency": "USD" },
+    "USBOND": { "type": "ETF", "market": "US", "sector": "Fixed Income", "risk": "Low", "currency": "USD" }
+  }
+}

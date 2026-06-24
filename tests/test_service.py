@@ -14,7 +14,7 @@ from aggregator.yields import YieldRecord
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_DIRECTORY = ROOT / "portfolio-sample"
+SAMPLE_DIRECTORY = ROOT / "sample" / "sources" / "2026-01-02"
 SAMPLE_CONFIG = load_portfolio_config(SAMPLE_DIRECTORY)
 SAMPLE_DOCUMENT = load_portfolio_config_document(SAMPLE_DIRECTORY)
 TEST_ASSETS = dict(SAMPLE_CONFIG.assets)
@@ -43,11 +43,11 @@ def build(holdings, yields=None):
 
 class PortfolioDocumentTests(unittest.TestCase):
     def test_configuration_is_embedded_without_flattened_metadata(self):
-        document = build([Holding("GOOG", "USD", "Sample A", Decimal("10"))])
+        document = build([Holding("FAKEAI", "USD", "Sample Joint", Decimal("10"))])
         self.assertEqual(document["configuration"], TEST_CONFIGURATION)
-        holding = next(item for item in document["holdings"] if item["asset"] == "GOOG")
+        holding = next(item for item in document["holdings"] if item["asset"] == "FAKEAI")
         self.assertEqual(holding, {
-            "asset": "GOOG", "accounts": {"Sample A": Decimal("10")},
+            "asset": "FAKEAI", "accounts": {"Sample Joint": Decimal("10")},
         })
         self.assertNotIn("type", holding)
         self.assertNotIn("total", holding)
@@ -63,23 +63,23 @@ class PortfolioDocumentTests(unittest.TestCase):
 
     def test_holdings_aggregate_exact_values_without_derived_fields(self):
         document = build([
-            Holding("GOOG", "USD", "Sample A", Decimal("1.234567")),
-            Holding("GOOG", "USD", "Sample B", Decimal("2")),
+            Holding("FAKEAI", "USD", "Sample Joint", Decimal("1.234567")),
+            Holding("FAKEAI", "USD", "Sample Registered", Decimal("2")),
         ])
-        holding = next(item for item in document["holdings"] if item["asset"] == "GOOG")
+        holding = next(item for item in document["holdings"] if item["asset"] == "FAKEAI")
         self.assertEqual(holding["accounts"], {
-            "Sample A": Decimal("1.234567"), "Sample B": Decimal("2"),
+            "Sample Joint": Decimal("1.234567"), "Sample Registered": Decimal("2"),
         })
         self.assertEqual(set(holding), {"asset", "accounts"})
 
     def test_market_yield_cache_is_embedded_with_provenance(self):
-        record = YieldRecord("GOOG", "GOOG", Decimal("0.678"), "2026-06-19", "test", "ok")
+        record = YieldRecord("FAKEAI", "FAKEAI", Decimal("0.678"), "2026-06-19", "test", "ok")
         document = build(
-            [Holding("GOOG", "USD", "Sample A", Decimal("10"))],
-            {"GOOG": record},
+            [Holding("FAKEAI", "USD", "Sample Joint", Decimal("10"))],
+            {"FAKEAI": record},
         )
-        self.assertEqual(document["yields"]["GOOG"], {
-            "providerSymbol": "GOOG", "percent": Decimal("0.678"),
+        self.assertEqual(document["yields"]["FAKEAI"], {
+            "providerSymbol": "FAKEAI", "percent": Decimal("0.678"),
             "asOf": "2026-06-19", "source": "test", "status": "ok",
         })
 
@@ -99,12 +99,12 @@ class PortfolioDocumentTests(unittest.TestCase):
 
     def test_unknown_asset_fails_explicitly(self):
         with self.assertRaisesRegex(ValueError, "missing deterministic classification"):
-            build([Holding("UNKNOWN", "CAD", "Sample A", Decimal("1"))])
+            build([Holding("UNKNOWN", "CAD", "Sample Joint", Decimal("1"))])
 
     def test_missing_fx_rate_fails_explicitly(self):
         with self.assertRaisesRegex(ValueError, "No CAD exchange rate found"):
             build_portfolio_document(
-                [Holding("GOOG", "USD", "Sample A", Decimal("1"))],
+                [Holding("FAKEAI", "USD", "Sample Joint", Decimal("1"))],
                 {"CAD": TEST_RATES["CAD"]}, TEST_CONFIG, TEST_CONFIGURATION, {},
                 snapshot_date="2026-06-20",
             )
@@ -113,7 +113,7 @@ class PortfolioDocumentTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, "configured currency USD conflicts with reported currency CAD"
         ):
-            build([Holding("GOOG", "CAD", "Sample A", Decimal("1"))])
+            build([Holding("FAKEAI", "CAD", "Sample Joint", Decimal("1"))])
 
     def test_json_writer_emits_numbers_and_schema(self):
         with tempfile.TemporaryDirectory() as directory:

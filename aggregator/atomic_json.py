@@ -16,6 +16,20 @@ def _json_value(value):
 
 
 def write_atomic_json(path: Path, document: dict) -> None:
+    _write_atomic_json(path, document, indent=2, separators=None)
+
+
+def write_atomic_json_compact(path: Path, document: dict) -> None:
+    _write_atomic_json(path, document, indent=None, separators=(",", ":"))
+
+
+def _write_atomic_json(
+    path: Path,
+    document: dict,
+    *,
+    indent: int | None,
+    separators: tuple[str, str] | None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     file_descriptor, temporary_name = tempfile.mkstemp(
         dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
@@ -24,7 +38,10 @@ def write_atomic_json(path: Path, document: dict) -> None:
     temporary_path = Path(temporary_name)
     try:
         with temporary_path.open("w", encoding="utf-8", newline="\n") as target:
-            json.dump(_json_value(document), target, indent=2, ensure_ascii=False)
+            json.dump(
+                _json_value(document), target, indent=indent,
+                separators=separators, ensure_ascii=False,
+            )
             target.write("\n")
         os.replace(temporary_path, path)
     finally:

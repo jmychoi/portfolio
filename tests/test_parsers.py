@@ -12,7 +12,7 @@ from aggregator.service import discover_csv_files, parse_files
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PORTFOLIO_DIRECTORY = ROOT / "portfolio-sample"
+PORTFOLIO_DIRECTORY = ROOT / "sample" / "sources" / "2026-01-02"
 INPUTS = PORTFOLIO_DIRECTORY / "inputs"
 PORTFOLIO_CONFIG = load_portfolio_config(PORTFOLIO_DIRECTORY)
 
@@ -20,20 +20,20 @@ PORTFOLIO_CONFIG = load_portfolio_config(PORTFOLIO_DIRECTORY)
 class ParserTests(unittest.TestCase):
     def test_sample_files_have_one_parser_and_expected_holding_counts(self):
         holdings = parse_files(discover_csv_files(PORTFOLIO_DIRECTORY), PORTFOLIO_CONFIG)
-        self.assertEqual(len(holdings), 6)
+        self.assertEqual(len(holdings), 7)
 
     def test_tddi_uses_account_base_currency_for_cash_and_securities(self):
         holdings = TddiParser().parse(INPUTS / "tddi-sample.csv", PORTFOLIO_CONFIG)
         self.assertTrue(all(holding.currency == "USD" for holding in holdings))
         cash = next(holding for holding in holdings if holding.symbol == "CASH-USD")
-        self.assertEqual(cash.market_value, Decimal("2500.00"))
-        self.assertEqual(cash.account_column, "Sample A")
+        self.assertEqual(cash.market_value, Decimal("2600.00"))
+        self.assertEqual(cash.account_column, "Sample Joint")
 
     def test_wealthsimple_uses_configured_account_mapping(self):
         holdings = WealthsimpleParser().parse(
             INPUTS / "wealthsimple-sample.csv", PORTFOLIO_CONFIG
         )
-        self.assertIn("Sample B", {holding.account_column for holding in holdings})
+        self.assertIn("Sample Registered", {holding.account_column for holding in holdings})
 
     def test_wealthsimple_rejects_currency_outside_configuration(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -49,10 +49,10 @@ class ParserTests(unittest.TestCase):
     def test_real_estate_uses_row_metadata_and_real_estate_account(self):
         holdings = RealEstateParser().parse(INPUTS / "real-estates.csv", PORTFOLIO_CONFIG)
         self.assertEqual(holdings, [Holding(
-            "Example Rental Property", "CAD", "Sample Property", Decimal("450000.00"),
+            "Fictional Duplex", "CAD", "Sample Property", Decimal("445000.00"),
             asset_type="Real Estate", market="Canada", sector="Real Estate", risk="Medium",
-            yield_percent=Decimal("4.00"),
-            url="https://example.com/sample-property",
+            yield_percent=Decimal("3.775280898876404494382022472"),
+            url="https://example.com/fictional-duplex",
         )])
 
     def test_real_estate_calculates_yield_from_net_monthly_income(self):

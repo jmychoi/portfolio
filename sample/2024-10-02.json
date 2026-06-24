@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 3,
+  "date": "2024-10-02",
+  "configuration": {
+    "account_columns": [
+      "Sample Joint",
+      "Sample Registered",
+      "Sample Property"
+    ],
+    "real_estate_account": "Sample Property",
+    "allowed_asset_types": [
+      "Stock",
+      "ETF"
+    ],
+    "allowed_markets": [
+      "US",
+      "Canada",
+      "Global"
+    ],
+    "allowed_risks": [
+      "High",
+      "Medium",
+      "Low"
+    ],
+    "allowed_currencies": [
+      "CAD",
+      "USD"
+    ],
+    "wealthsimple_account_types": {
+      "Non-registered": "Sample Joint",
+      "TFSA": "Sample Registered"
+    },
+    "td_direct_investing_accounts": {
+      "DEMOUSD": {
+        "account": "Sample Joint",
+        "currency": "USD"
+      }
+    },
+    "assets": {
+      "FAKEAI": {
+        "type": "Stock",
+        "market": "US",
+        "sector": "Technology",
+        "risk": "High",
+        "currency": "USD"
+      },
+      "FAKEBANK": {
+        "type": "Stock",
+        "market": "Canada",
+        "sector": "Finance",
+        "risk": "Medium",
+        "currency": "CAD"
+      },
+      "FUNDCA": {
+        "type": "ETF",
+        "market": "Canada",
+        "sector": "Broad Market",
+        "risk": "Medium",
+        "currency": "CAD"
+      },
+      "FUNDGLB": {
+        "type": "ETF",
+        "market": "Global",
+        "sector": "Broad Market",
+        "risk": "Medium",
+        "currency": "USD"
+      },
+      "USBOND": {
+        "type": "ETF",
+        "market": "US",
+        "sector": "Fixed Income",
+        "risk": "Low",
+        "currency": "USD"
+      }
+    }
+  },
+  "exchangeRates": {
+    "CAD": {
+      "rateToCad": 1,
+      "date": null,
+      "source": null
+    },
+    "USD": {
+      "rateToCad": 1.36,
+      "date": "2024-10-02",
+      "source": "Synthetic sample"
+    }
+  },
+  "yields": {
+    "FAKEAI": {
+      "providerSymbol": "FAKEAI",
+      "percent": 0.18,
+      "asOf": "2024-10-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "FAKEBANK": {
+      "providerSymbol": "FAKEBANK.TO",
+      "percent": 4.45,
+      "asOf": "2024-10-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "FUNDCA": {
+      "providerSymbol": "FUNDCA.TO",
+      "percent": 2.75,
+      "asOf": "2024-10-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "FUNDGLB": {
+      "providerSymbol": "FUNDGLB",
+      "percent": 1.35,
+      "asOf": "2024-10-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "USBOND": {
+      "providerSymbol": "USBOND",
+      "percent": 4.2,
+      "asOf": "2024-10-02",
+      "source": "Synthetic sample",
+      "status": "ok"
+    },
+    "CASH-CAD": {
+      "providerSymbol": null,
+      "percent": 0,
+      "asOf": null,
+      "source": "built-in",
+      "status": "fixed"
+    },
+    "CASH-USD": {
+      "providerSymbol": null,
+      "percent": 0,
+      "asOf": null,
+      "source": "built-in",
+      "status": "fixed"
+    },
+    "Fictional Duplex": {
+      "providerSymbol": null,
+      "percent": 3.4196891191709846,
+      "asOf": null,
+      "source": "real-estate",
+      "status": "derived"
+    }
+  },
+  "supplementalAssets": {
+    "CASH-CAD": {
+      "type": "Cash",
+      "market": "Canada",
+      "sector": "Cash",
+      "risk": "Low",
+      "currency": "CAD"
+    },
+    "CASH-USD": {
+      "type": "Cash",
+      "market": "US",
+      "sector": "Cash",
+      "risk": "Low",
+      "currency": "USD"
+    },
+    "Fictional Duplex": {
+      "type": "Real Estate",
+      "market": "Canada",
+      "sector": "Real Estate",
+      "risk": "Medium",
+      "currency": "CAD",
+      "url": "https://example.com/fictional-duplex"
+    }
+  },
+  "holdings": [
+    {
+      "asset": "CASH-CAD",
+      "accounts": {}
+    },
+    {
+      "asset": "CASH-USD",
+      "accounts": {
+        "Sample Joint": 1680
+      }
+    },
+    {
+      "asset": "FAKEAI",
+      "accounts": {
+        "Sample Joint": 1050
+      }
+    },
+    {
+      "asset": "FAKEBANK",
+      "accounts": {
+        "Sample Registered": 11100
+      }
+    },
+    {
+      "asset": "FUNDCA",
+      "accounts": {
+        "Sample Joint": 15300
+      }
+    },
+    {
+      "asset": "FUNDGLB",
+      "accounts": {
+        "Sample Registered": 7600
+      }
+    },
+    {
+      "asset": "Fictional Duplex",
+      "accounts": {
+        "Sample Property": 386000
+      }
+    },
+    {
+      "asset": "USBOND",
+      "accounts": {
+        "Sample Joint": 2860
+      }
+    }
+  ]
+}

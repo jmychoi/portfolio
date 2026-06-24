@@ -12,6 +12,10 @@
     } catch (_) {
       throw new Error("The selected file is not valid JSON");
     }
+    return loadPortfolioDocument(document);
+  }
+
+  function loadPortfolioDocument(document) {
     requireObject(document, "Portfolio document");
     if (document.schemaVersion !== 3) {
       throw new Error(`Unsupported portfolio schema version: ${document.schemaVersion}`);
@@ -78,6 +82,11 @@
       const url = metadata.url
         ? optionalUrl(metadata.url, `metadata for ${asset}`)
         : yahooFinanceUrl(yieldRecord && yieldRecord.providerSymbol);
+      const classifications = Object.fromEntries(
+        Object.entries(metadata)
+          .filter(([key, value]) => key !== "url" && typeof value === "string" && value.trim())
+          .map(([key, value]) => [key, value.trim()])
+      );
       return {
         asset,
         type: requiredText(metadata.type, `metadata for ${asset}.type`),
@@ -88,6 +97,7 @@
         yieldPct,
         fxRate,
         url,
+        classifications,
         accounts: accountValues,
       };
     });
@@ -255,5 +265,7 @@
     return symbol ? `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}` : null;
   }
 
-  return { loadPortfolio, deriveAssets, groupAssets, summarize, sortRows };
+  return {
+    loadPortfolio, loadPortfolioDocument, deriveAssets, groupAssets, summarize, sortRows,
+  };
 });

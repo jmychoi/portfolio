@@ -12,23 +12,24 @@ from aggregator.config import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SAMPLE_SOURCE = ROOT / "sample" / "sources" / "2026-01-02"
 
 
 class PortfolioConfigTests(unittest.TestCase):
     def test_sample_configuration_loads_typed_immutable_mappings(self):
-        config = load_portfolio_config(ROOT / "portfolio-sample")
+        config = load_portfolio_config(SAMPLE_SOURCE)
         self.assertEqual(
-            config.tddi_accounts["SAMPLE123"],
-            TddiAccount("Sample A", "USD"),
+            config.tddi_accounts["DEMOUSD"],
+            TddiAccount("Sample Joint", "USD"),
         )
-        self.assertIn("Sample A", config.account_columns)
+        self.assertIn("Sample Joint", config.account_columns)
         self.assertEqual(config.real_estate_account, "Sample Property")
         self.assertEqual(
-            config.wealthsimple_account_types["TFSA"], "Sample B"
+            config.wealthsimple_account_types["TFSA"], "Sample Registered"
         )
         self.assertEqual(
-            config.assets["MSFT"],
-            AssetMetadata("Stock", "US", "Technology", "Medium", "USD"),
+            config.assets["FAKEAI"],
+            AssetMetadata("Stock", "US", "Technology", "High", "USD"),
         )
         self.assertEqual(config.allowed_currencies, frozenset({"CAD", "USD"}))
         with self.assertRaises(TypeError):
@@ -42,15 +43,15 @@ class PortfolioConfigTests(unittest.TestCase):
                 load_portfolio_config(Path(directory))
 
     def test_complete_configuration_document_is_available_for_snapshot(self):
-        document = load_portfolio_config_document(ROOT / "portfolio-sample")
+        document = load_portfolio_config_document(SAMPLE_SOURCE)
         self.assertEqual(document["real_estate_account"], "Sample Property")
-        self.assertIn("MSFT", document["assets"])
+        self.assertIn("FAKEAI", document["assets"])
 
     def test_duplicate_json_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "inputs" / "config.json"
             path.parent.mkdir()
-            sample = (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+            sample = (SAMPLE_SOURCE / "inputs" / "config.json").read_text(
                 encoding="utf-8"
             )
             path.write_text(
@@ -65,11 +66,11 @@ class PortfolioConfigTests(unittest.TestCase):
             path = Path(directory) / "inputs" / "config.json"
             path.parent.mkdir()
             raw = json.loads(
-                (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+                (SAMPLE_SOURCE / "inputs" / "config.json").read_text(
                     encoding="utf-8"
                 )
             )
-            del raw["assets"]["MSFT"]["sector"]
+            del raw["assets"]["FAKEAI"]["sector"]
             path.write_text(json.dumps(raw), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "missing keys: sector"):
                 load_portfolio_config(Path(directory))
@@ -79,11 +80,11 @@ class PortfolioConfigTests(unittest.TestCase):
             path = Path(directory) / "inputs" / "config.json"
             path.parent.mkdir()
             raw = json.loads(
-                (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+                (SAMPLE_SOURCE / "inputs" / "config.json").read_text(
                     encoding="utf-8"
                 )
             )
-            raw["assets"]["MSFT"]["currency"] = "EUR"
+            raw["assets"]["FAKEAI"]["currency"] = "EUR"
             path.write_text(json.dumps(raw), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "unsupported currency 'EUR'"):
                 load_portfolio_config(Path(directory))
@@ -93,7 +94,7 @@ class PortfolioConfigTests(unittest.TestCase):
             path = Path(directory) / "inputs" / "config.json"
             path.parent.mkdir()
             raw = json.loads(
-                (ROOT / "portfolio-sample" / "inputs" / "config.json").read_text(
+                (SAMPLE_SOURCE / "inputs" / "config.json").read_text(
                     encoding="utf-8"
                 )
             )

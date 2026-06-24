@@ -1,0 +1,107 @@
+History Builder and Explorer Specification
+==========================================
+
+Purpose
+=======
+
+The history tool bundles dated portfolio snapshots into one compact history.json.
+History Explorer visualizes their CAD value or projected annual income over time.
+Individual schema-version-3 portfolio JSON files remain the canonical source data.
+
+
+Command-Line Interface
+======================
+
+Exactly one existing directory containing portfolio JSON snapshots is required:
+
+    python history.py C:\Users\jmych\GoogleDrive\Finance\Portfolios
+
+The builder reads non-recursive *.json files, excluding its selected output path.
+The default output is <portfolio-directory>/history.json. --output may specify a
+different .json filename in the same directory. Existing output is atomically
+replaced and compactly encoded.
+
+Every input JSON file must be a valid portfolio schema-version-3 document. Dates
+must be unique. Output portfolios are ordered by their embedded ISO date.
+
+
+History JSON Contract
+=====================
+
+    {
+      "historySchemaVersion": 1,
+      "portfolios": [
+        { ...complete portfolio schema-version-3 document... }
+      ]
+    }
+
+The wrapper deliberately preserves complete portfolio documents. It does not store
+derived totals or projected income. Each portfolio retains its historical accounts,
+asset metadata, classifications, FX rates, yields, and holdings.
+
+The builder rejects malformed JSON, duplicate keys or dates, unsupported portfolio
+schema versions, unresolved metadata or FX rates, unknown accounts, negative holding
+values, and negative yields. Null yield remains valid and means unknown.
+
+
+History Explorer
+================
+
+history.html is a static, dependency-free browser application. It reads one local
+history.json through file selection or drag-and-drop. Data never leaves the browser
+tab. No HTTP server, package manager, or build step is required.
+
+The viewer reuses Portfolio Explorer's portfolio validation. The account union is
+ordered by first historical appearance. All accounts are selected initially.
+
+
+Calculations
+============
+
+For each asset, account value in CAD is:
+
+    native account value * snapshot exchange rate to CAD
+
+Projected annual income is:
+
+    account value CAD * snapshot yield percentage / 100
+
+Unknown yield contributes no projected income and is not treated as zero yield.
+Yield coverage is the percentage of selected CAD value having a known yield.
+
+The date filter is inclusive. Classification stacking uses the union of category
+values present across the selected snapshots and accounts. Missing classifications
+use Unknown. Classification dimensions are discovered from asset metadata, with
+Type, Sector, Market, Risk, and Currency preferred first; future string metadata
+fields are supported without History Explorer changes.
+
+
+Visualization and Interaction
+=============================
+
+- Measure choices are Portfolio Value and Projected Annual Income.
+- Stack choices are Account and every discovered classification dimension.
+- Time Frame presets are YTD, 3M, 6M, 1Y, 2Y, 5Y, and Full date range.
+- From and To date controls restrict the x-axis; manual date edits create a custom
+  time frame.
+- The chart is a filled stacked-area SVG with a total outline.
+- Straight segments connect actual portfolio observations on a time-scaled x-axis.
+- Hovering shows the nearest snapshot, total, category values, and income coverage.
+- Categories keep stable colors within the selected color scheme.
+- The legend appears to the right of the chart on wide screens and stacks below on
+  narrow screens.
+- The legend shows each category's value and percent of total at the final selected
+  snapshot. Tooltips show value and percent of total for the nearest snapshot.
+- Summary cards show final value, period change, snapshot count, and coverage.
+- Dark mode is default; light mode and all Portfolio Explorer color schemes persist
+  through browser storage when available.
+- The dashboard fits the desktop browser viewport and responds to narrow screens.
+
+
+Verification
+============
+
+    python -m unittest discover -s tests -p "test_*.py"
+    node --test tests\model.test.js tests\history-model.test.js
+
+JavaScript syntax checks and direct file:// browser verification are also required.

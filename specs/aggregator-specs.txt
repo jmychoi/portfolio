@@ -14,12 +14,12 @@ Command-Line Interface
 
 Exactly one existing portfolio directory is required:
 
-    python aggregate.py portfolio-sample
+    python aggregate.py sample\sources\2026-01-02
 
 The generated portfolio date defaults to the current local calendar date. --date
 may override it with a valid ISO YYYY-MM-DD date:
 
-    python aggregate.py portfolio-sample --date 2026-06-20
+    python aggregate.py sample\sources\2026-01-02 --date 2026-06-20
 
 The default output is <portfolio-directory>/portfolio.json. An existing file is
 atomically replaced. --output may specify a different filename in the portfolio
