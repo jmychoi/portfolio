@@ -5,15 +5,18 @@ Purpose and Runtime
 ===================
 
 Portfolio Explorer is a dependency-free static browser UI for portfolio.json files
-created by the aggregator. The user opens explorer.html directly and chooses or drops
-exactly one JSON file. Data remains local to the browser tab. No server, package
-manager, build step, or third-party library is required.
+created by the aggregator and portfolios.json files created by the collector. The
+user opens explorer.html directly and chooses or drops exactly one JSON file. Data
+remains local to the browser tab. No server, package manager, build step, or
+third-party library is required.
 
 
 Input Contract
 ==============
 
-Only versioned JSON is supported; CSV is not supported. The document must contain:
+Only versioned JSON is supported; CSV is not supported.
+
+A single-snapshot portfolio document must contain:
 
 - schemaVersion 3 and a valid ISO YYYY-MM-DD portfolio date.
 - configuration with a non-empty, unique account_columns array and asset metadata.
@@ -35,6 +38,10 @@ Malformed JSON, unsupported schema versions, invalid dates, missing metadata/rat
 assets/accounts, invalid numbers, unknown accounts, and unsafe URLs produce a visible
 error instead of a partial dashboard.
 
+A collection document must contain schemaVersion 1, kind portfolioCollection, and
+a non-empty portfolios array of complete schema-version-3 portfolio documents.
+Collection snapshot dates must be strictly chronological and unique.
+
 
 Dynamic Calculations
 ====================
@@ -54,6 +61,12 @@ yields. Grouped holding percentage is recalculated against the selected portfoli
 Interaction
 ===========
 
+- Loading portfolio.json opens Snapshot view.
+- Loading portfolios.json opens History view by default.
+- When portfolios.json is loaded, the View selector switches between History and
+  Snapshot, and the Snapshot selector lists every embedded portfolio date.
+- Choosing a snapshot jumps to Snapshot view for that date. The user can switch
+  back to History without reloading the file.
 - All configured accounts are selected initially.
 - Select All and Clear All controls update account selection.
 - Grouping choices are None, Type, Market, Sector, Risk, and Currency.
@@ -64,6 +77,22 @@ Interaction
 - Table and pie chart are visible together and stack responsively when narrow.
 - The read-only FX table lists rates embedded in portfolio.json.
 - Asset labels link to derived or supplemental URLs when available.
+
+
+History View
+============
+
+- Measure choices are Portfolio Value and Projected Annual Income.
+- Stack choices are Account and every discovered classification dimension.
+- Time Frame presets are YTD, 3M, 6M, 1Y, 2Y, 5Y, and Full date range.
+- From and To date controls restrict the x-axis; manual date edits create a custom
+  time frame.
+- The chart is a filled stacked-area SVG with a total outline.
+- Straight segments connect actual portfolio observations on a time-scaled x-axis.
+- Hovering shows the nearest snapshot, total, category values, and income coverage.
+- The legend appears to the right of the chart on wide screens and stacks below on
+  narrow screens.
+- The legend and tooltip show value and percent of total.
 
 
 Table and Totals
@@ -99,6 +128,6 @@ Verification
 
 The pure JavaScript model is tested with:
 
-    node --test tests\model.test.js
+    node --test tests\model.test.js tests\collection-model.test.js
 
 Explorer must remain usable when opened directly as a local file.

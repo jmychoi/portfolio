@@ -6,7 +6,9 @@
   <meta name="description" content="A local, dependency-free portfolio JSON explorer.">
   <title>Portfolio Explorer</title>
   <link rel="stylesheet" href="explorer/explorer.css">
+  <link rel="stylesheet" href="explorer/history-view.css">
   <script defer src="explorer/model.js"></script>
+  <script defer src="explorer/collection-model.js"></script>
   <script defer src="explorer/explorer.js"></script>
 </head>
 <body>
@@ -42,7 +44,7 @@
       <p class="eyebrow">No upload. No server. Your data stays local.</p>
       <h2 id="file-stage-title">Explore your portfolio from every angle.</h2>
       <p class="file-stage-copy">
-        Drop an aggregator-generated <strong>portfolio.json</strong> here, or choose it from disk.
+        Drop a generated <strong>portfolio.json</strong> or <strong>portfolios.json</strong> here, or choose it from disk.
       </p>
       <button id="choose-file" class="button button-primary" type="button">Choose portfolio JSON</button>
       <p class="drop-hint">You can also drag and drop the file anywhere in this panel.</p>
@@ -57,6 +59,21 @@
         <p id="selection-summary" class="selection-summary"></p>
       </div>
 
+      <section id="view-controls" class="view-controls" aria-label="Explorer view controls" hidden>
+        <div class="control-group">
+          <label for="view-mode">View</label>
+          <select id="view-mode">
+            <option value="history">History</option>
+            <option value="snapshot">Snapshot</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="snapshot-select">Snapshot</label>
+          <select id="snapshot-select"></select>
+        </div>
+      </section>
+
+      <div id="snapshot-view">
       <section class="control-panel" aria-label="Portfolio controls">
         <div class="control-group group-control">
           <label for="group-by">Group by</label>
@@ -148,6 +165,96 @@
           </div>
         </aside>
       </section>
+      </div>
+
+      <div id="history-view" class="history-dashboard" hidden>
+        <section class="control-panel history-controls" aria-label="History controls">
+          <div class="control-group">
+            <label for="history-metric">Measure</label>
+            <select id="history-metric">
+              <option value="value">Portfolio Value</option>
+              <option value="income">Projected Annual Income</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="history-stack-by">Stack by</label>
+            <select id="history-stack-by"></select>
+          </div>
+          <div class="control-group">
+            <label for="history-time-frame">Time Frame</label>
+            <select id="history-time-frame">
+              <option value="ytd">YTD</option>
+              <option value="3m">3M</option>
+              <option value="6m">6M</option>
+              <option value="1y">1Y</option>
+              <option value="2y">2Y</option>
+              <option value="5y">5Y</option>
+              <option value="full">Full date range</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="history-start-date">From</label>
+            <input id="history-start-date" type="date">
+          </div>
+          <div class="control-group">
+            <label for="history-end-date">To</label>
+            <input id="history-end-date" type="date">
+          </div>
+          <fieldset class="account-control history-account-control">
+            <legend>Accounts</legend>
+            <div class="account-row">
+              <div class="account-actions">
+                <button id="history-select-all-accounts" class="button button-secondary" type="button">Select all</button>
+                <button id="history-clear-all-accounts" class="button button-secondary" type="button">Clear all</button>
+              </div>
+              <div id="history-account-options" class="account-options"></div>
+            </div>
+          </fieldset>
+        </section>
+
+        <section class="metric-grid" aria-label="Selected history summary">
+          <article class="metric-card metric-primary">
+            <p id="history-latest-label">Latest value</p>
+            <strong id="history-metric-latest">-</strong>
+            <span id="history-latest-date">Selected range</span>
+          </article>
+          <article class="metric-card">
+            <p>Period change</p>
+            <strong id="history-metric-change">-</strong>
+            <span id="history-metric-change-percent">First to last snapshot</span>
+          </article>
+          <article class="metric-card">
+            <p>Snapshots</p>
+            <strong id="history-metric-snapshots">-</strong>
+            <span>Observed portfolio dates</span>
+          </article>
+          <article class="metric-card">
+            <p id="history-coverage-label">Yield coverage</p>
+            <strong id="history-metric-coverage">-</strong>
+            <span id="history-coverage-note">Latest selected snapshot</span>
+          </article>
+        </section>
+
+        <article class="panel history-chart-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Historical trend</p>
+              <h3 id="history-chart-title">Portfolio value by account</h3>
+            </div>
+            <p id="history-chart-note" class="sort-help"></p>
+          </div>
+          <div class="history-chart-body">
+            <div id="history-chart-wrap" class="history-chart-wrap">
+              <div id="history-chart-container" class="history-chart-container"></div>
+              <div id="history-chart-tooltip" class="chart-tooltip" hidden></div>
+              <div id="history-chart-empty" class="empty-state" hidden>
+                Select accounts and a date range containing portfolio values.
+              </div>
+            </div>
+            <div id="history-chart-legend" class="history-legend"></div>
+          </div>
+        </article>
+      </div>
     </section>
   </main>
 

@@ -1,8 +1,8 @@
 # Synthetic portfolio sample
 
 Every value, account, symbol, URL, and identifier in this directory is fictional.
-The sample contains ten dated portfolio snapshots so both static browser views
-can be tested without personal data or network access.
+The sample contains ten dated portfolio snapshots so Portfolio Explorer can be
+tested without personal data or network access.
 
 Source files are stored under `sources/<date>/`. Each dated source directory is a
 complete aggregator input with deterministic `inputs/config.json`, holdings CSVs,
@@ -16,9 +16,8 @@ foreach ($date in $dates) {
   python aggregate.py "sample\sources\$date" --date $date
   Move-Item -Force "sample\sources\$date\portfolio.json" "sample\$date.json"
 }
-python history.py sample
+python collect.py sample
 ```
 
-Open `explorer.html` and select one of the dated JSON files to try Portfolio
-Explorer. Open `history.html` and select `sample/history.json` to try History
-Explorer.
+Open `explorer.html` and select one of the dated JSON files to try Snapshot view,
+or select `sample/portfolios.json` to try the combined History/Snapshot workflow.

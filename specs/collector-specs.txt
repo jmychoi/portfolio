@@ -1,0 +1,50 @@
+Portfolio Collector Specification
+=================================
+
+Purpose
+=======
+
+collect.py bundles dated portfolio snapshots into one compact portfolios.json.
+Individual schema-version-3 portfolio JSON files remain the canonical source data.
+
+
+Command-Line Interface
+======================
+
+Exactly one existing directory containing portfolio JSON snapshots is required:
+
+    python collect.py C:\Users\jmych\GoogleDrive\Finance\Portfolios
+
+The collector reads non-recursive *.json files, excluding its selected output path.
+The default output is <portfolio-directory>/portfolios.json. --output may specify a
+different .json filename in the same directory. Existing output is atomically
+replaced and compactly encoded.
+
+Every input JSON file must be a valid portfolio schema-version-3 document. Dates
+must be unique. Output portfolios are ordered by their embedded ISO date.
+
+
+Portfolio Collection JSON Contract
+==================================
+
+    {
+      "schemaVersion": 1,
+      "kind": "portfolioCollection",
+      "portfolios": [
+        { ...complete portfolio schema-version-3 document... }
+      ]
+    }
+
+The wrapper deliberately preserves complete portfolio documents. It does not store
+derived totals or projected income. Each portfolio retains its historical accounts,
+asset metadata, classifications, FX rates, yields, and holdings.
+
+The collector rejects malformed JSON, duplicate keys or dates, unsupported portfolio
+schema versions, unresolved metadata or FX rates, unknown accounts, negative holding
+values, and negative yields. Null yield remains valid and means unknown.
+
+
+Verification
+============
+
+    python -m unittest discover -s tests -p "test_*.py"

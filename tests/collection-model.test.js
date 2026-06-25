@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const Model = require("../history/model.js");
+const Model = require("../explorer/collection-model.js");
 
 function portfolio(date, fundValue, bankValue, fundYield = 4) {
   return {
@@ -38,7 +38,8 @@ function portfolio(date, fundValue, bankValue, fundYield = 4) {
 
 function history() {
   return JSON.stringify({
-    historySchemaVersion: 1,
+    schemaVersion: 1,
+    kind: "portfolioCollection",
     portfolios: [
       portfolio("2026-01-31", 100, 200, null),
       portfolio("2026-02-28", 150, 300, 4),
@@ -47,15 +48,15 @@ function history() {
 }
 
 test("history loader validates portfolios and discovers accounts and dimensions", () => {
-  const loaded = Model.loadHistory(history());
+  const loaded = Model.loadCollection(history());
   assert.deepEqual(loaded.accounts, ["Cash", "RRSP"]);
   assert.deepEqual(loaded.dimensions, ["type", "sector", "market", "risk", "currency", "region"]);
   assert.equal(loaded.snapshots.length, 2);
 });
 
 test("value history stacks selected accounts by a classification", () => {
-  const loaded = Model.loadHistory(history());
-  const derived = Model.deriveHistory(loaded, {
+  const loaded = Model.loadCollection(history());
+  const derived = Model.deriveCollectionHistory(loaded, {
     selectedAccounts: new Set(["Cash"]),
     startDate: "2026-01-31",
     endDate: "2026-02-28",
@@ -70,8 +71,8 @@ test("value history stacks selected accounts by a classification", () => {
 });
 
 test("income history excludes unknown yields and reports value coverage", () => {
-  const loaded = Model.loadHistory(history());
-  const derived = Model.deriveHistory(loaded, {
+  const loaded = Model.loadCollection(history());
+  const derived = Model.deriveCollectionHistory(loaded, {
     selectedAccounts: new Set(["Cash"]),
     stackBy: "account",
     metric: "income",
@@ -82,8 +83,8 @@ test("income history excludes unknown yields and reports value coverage", () => 
 });
 
 test("date range is inclusive", () => {
-  const loaded = Model.loadHistory(history());
-  const derived = Model.deriveHistory(loaded, {
+  const loaded = Model.loadCollection(history());
+  const derived = Model.deriveCollectionHistory(loaded, {
     selectedAccounts: new Set(loaded.accounts),
     startDate: "2026-02-01",
     endDate: "2026-02-28",
@@ -96,5 +97,5 @@ test("date range is inclusive", () => {
 test("duplicate or unsorted dates are rejected", () => {
   const document = JSON.parse(history());
   document.portfolios.reverse();
-  assert.throws(() => Model.loadHistory(JSON.stringify(document)), /strictly chronological/);
+  assert.throws(() => Model.loadCollection(JSON.stringify(document)), /strictly chronological/);
 });

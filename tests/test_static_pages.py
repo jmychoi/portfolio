@@ -31,11 +31,14 @@ class StaticPageTests(unittest.TestCase):
             self.assertTrue((ROOT / asset).is_file(), f"missing {asset} referenced by {name}")
         return parser
 
-    def test_history_page_has_required_controls_and_local_assets(self):
-        parser = self.parse("history.html")
+    def test_portfolio_explorer_has_snapshot_and_history_controls(self):
+        parser = self.parse("explorer.html")
         required = {
-            "file-input", "dashboard", "metric", "stack-by", "time-frame",
-            "start-date", "end-date", "account-options", "chart-container", "chart-legend",
+            "file-input", "dashboard", "view-mode", "snapshot-select",
+            "group-by", "account-options", "table-body", "pie-container",
+            "history-metric", "history-stack-by", "history-time-frame",
+            "history-start-date", "history-end-date", "history-account-options",
+            "history-chart-container", "history-chart-legend",
         }
         self.assertTrue(required.issubset(parser.ids))
 
@@ -43,6 +46,7 @@ class StaticPageTests(unittest.TestCase):
         parser = self.parse("explorer.html")
         self.assertIn("group-by", parser.ids)
         self.assertIn("explorer/explorer.js", parser.assets)
+        self.assertIn("explorer/collection-model.js", parser.assets)
 
 
 if __name__ == "__main__":

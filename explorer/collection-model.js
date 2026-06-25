@@ -3,22 +3,25 @@
     ? require("../explorer/model.js") : root.PortfolioModel;
   const api = factory(portfolioModel);
   if (typeof module === "object" && module.exports) module.exports = api;
-  if (root) root.HistoryModel = api;
+  if (root) root.PortfolioCollectionModel = api;
 })(typeof window !== "undefined" ? window : globalThis, function (PortfolioModel) {
   "use strict";
 
   const PREFERRED_DIMENSIONS = ["type", "sector", "market", "risk", "currency"];
 
-  function loadHistory(text) {
+  function loadCollection(text) {
     let document;
     try {
       document = JSON.parse(String(text).replace(/^\uFEFF/, ""));
     } catch (_) {
       throw new Error("The selected file is not valid JSON");
     }
-    requireObject(document, "History document");
-    if (document.historySchemaVersion !== 1) {
-      throw new Error(`Unsupported history schema version: ${document.historySchemaVersion}`);
+    requireObject(document, "Portfolio collection");
+    if (document.kind !== "portfolioCollection") {
+      throw new Error(`Unsupported collection kind: ${document.kind}`);
+    }
+    if (document.schemaVersion !== 1) {
+      throw new Error(`Unsupported collection schema version: ${document.schemaVersion}`);
     }
     if (!Array.isArray(document.portfolios) || !document.portfolios.length) {
       throw new Error("portfolios must be a non-empty array");
@@ -61,7 +64,7 @@
     return { accounts, dimensions: orderedDimensions, snapshots };
   }
 
-  function deriveHistory(history, options) {
+  function deriveCollectionHistory(history, options) {
     const selectedAccounts = options.selectedAccounts || new Set();
     const startDate = options.startDate || history.snapshots[0].date;
     const endDate = options.endDate || history.snapshots[history.snapshots.length - 1].date;
@@ -142,5 +145,5 @@
     return value;
   }
 
-  return { loadHistory, deriveHistory };
+  return { loadCollection, deriveCollectionHistory };
 });

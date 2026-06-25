@@ -6,13 +6,14 @@ from pathlib import Path
 from aggregator.atomic_json import write_atomic_json_compact
 
 
-HISTORY_SCHEMA_VERSION = 1
+COLLECTION_SCHEMA_VERSION = 1
+COLLECTION_KIND = "portfolioCollection"
 PORTFOLIO_SCHEMA_VERSION = 3
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Bundle dated portfolio JSON files for History Explorer."
+        description="Collect dated portfolio JSON snapshots into portfolios.json."
     )
     parser.add_argument(
         "portfolio_directory",
@@ -20,8 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="directory containing portfolio JSON snapshots",
     )
     parser.add_argument(
-        "--output", "-o", default="history.json",
-        help="output filename within the portfolio directory (default: history.json)",
+        "--output", "-o", default="portfolios.json",
+        help="output filename within the portfolio directory (default: portfolios.json)",
     )
     return parser
 
@@ -49,11 +50,12 @@ def load_portfolios(directory: Path, output_path: Path) -> list[dict]:
     return [by_date[key][1] for key in sorted(by_date)]
 
 
-def build_history_document(portfolios: list[dict]) -> dict:
+def build_collection_document(portfolios: list[dict]) -> dict:
     if not portfolios:
         raise ValueError("At least one portfolio is required")
     return {
-        "historySchemaVersion": HISTORY_SCHEMA_VERSION,
+        "schemaVersion": COLLECTION_SCHEMA_VERSION,
+        "kind": COLLECTION_KIND,
         "portfolios": portfolios,
     }
 
@@ -181,7 +183,7 @@ def main() -> None:
     output_path = directory / output_name
     try:
         portfolios = load_portfolios(directory, output_path)
-        document = build_history_document(portfolios)
+        document = build_collection_document(portfolios)
         write_atomic_json_compact(output_path, document)
     except ValueError as exc:
         parser.error(str(exc))
