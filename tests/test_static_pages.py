@@ -47,6 +47,8 @@ class StaticPageTests(unittest.TestCase):
         self.assertIn("group-by", parser.ids)
         self.assertIn("explorer/explorer.js", parser.assets)
         self.assertIn("explorer/collection-model.js", parser.assets)
+        self.assertIn("explorer/snapshot-view.js", parser.assets)
+        self.assertIn("explorer/history-view.js", parser.assets)
 
 
 if __name__ == "__main__":

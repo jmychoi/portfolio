@@ -130,4 +130,13 @@ The pure JavaScript model is tested with:
 
     node --test tests\model.test.js tests\collection-model.test.js
 
+The browser application is split into:
+
+- explorer.js for file loading, theme, collection routing, and view switching.
+- snapshot-view.js for the table, pie chart, snapshot controls, and snapshot
+  account filtering.
+- history-view.js for time-frame controls, history account filtering, and the
+  stacked area chart.
+- model.js and collection-model.js for pure data validation and calculations.
+
 Explorer must remain usable when opened directly as a local file.

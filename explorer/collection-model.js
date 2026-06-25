@@ -124,9 +124,14 @@
         categoryTotals.set(category, (categoryTotals.get(category) || 0) + value);
       }
     }
+    const finalCategories = categoryMaps.at(-1) || new Map();
     const categories = [...categoryTotals]
       .filter(([, total]) => total > 0)
-      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+      .sort((left, right) => {
+        const finalDifference = (finalCategories.get(right[0]) || 0)
+          - (finalCategories.get(left[0]) || 0);
+        return finalDifference || right[1] - left[1] || left[0].localeCompare(right[0]);
+      })
       .map(([category]) => category);
     const series = categories.map((category) => ({
       category,

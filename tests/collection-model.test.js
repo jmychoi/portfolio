@@ -70,6 +70,24 @@ test("value history stacks selected accounts by a classification", () => {
   );
 });
 
+test("history series are ordered by the final selected snapshot", () => {
+  const loaded = Model.loadCollection(JSON.stringify({
+    schemaVersion: 1,
+    kind: "portfolioCollection",
+    portfolios: [
+      portfolio("2026-01-31", 500, 10),
+      portfolio("2026-02-28", 100, 300),
+    ],
+  }));
+  const derived = Model.deriveCollectionHistory(loaded, {
+    selectedAccounts: new Set(["Cash"]),
+    stackBy: "sector",
+    metric: "value",
+  });
+  assert.deepEqual(derived.series.map((series) => series.category), ["Finance", "Mixed"]);
+  assert.deepEqual(derived.series.map((series) => series.values.at(-1)), [300, 140]);
+});
+
 test("income history excludes unknown yields and reports value coverage", () => {
   const loaded = Model.loadCollection(history());
   const derived = Model.deriveCollectionHistory(loaded, {
