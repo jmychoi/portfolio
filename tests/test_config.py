@@ -22,6 +22,8 @@ class PortfolioConfigTests(unittest.TestCase):
             config.tddi_accounts["DEMOUSD"],
             TddiAccount("Sample Joint", "USD"),
         )
+        self.assertEqual(config.rbc_accounts["DEMO123"], "Sample Joint")
+        self.assertEqual(config.symbol_aliases["FUNDALT"], "FUNDGLB")
         self.assertIn("Sample Joint", config.account_columns)
         self.assertEqual(config.real_estate_account, "Sample Property")
         self.assertEqual(

@@ -8,6 +8,7 @@ from aggregator.atomic_json import write_atomic_json
 from aggregator.config import CASH_METADATA, AssetMetadata, PortfolioConfig
 from aggregator.models import Holding
 from aggregator.parsers import PARSERS
+from aggregator.symbols import canonical_symbol
 
 
 SCHEMA_VERSION = 3
@@ -59,25 +60,26 @@ def build_portfolio_document(
     by_symbol["CASH-USD"]
 
     for holding in holdings:
+        symbol = canonical_symbol(holding.symbol, config.symbol_aliases)
         if holding.account_column not in config.account_columns:
             raise ValueError(f"Unknown account column: {holding.account_column}")
-        metadata = _holding_metadata(holding, config.assets)
-        previous_metadata = metadata_by_symbol.setdefault(holding.symbol, metadata)
+        metadata = _holding_metadata(holding, config.assets, symbol)
+        previous_metadata = metadata_by_symbol.setdefault(symbol, metadata)
         if previous_metadata != metadata:
-            raise ValueError(f"Asset {holding.symbol!r} has inconsistent metadata")
+            raise ValueError(f"Asset {symbol!r} has inconsistent metadata")
         if metadata.currency != holding.currency:
             raise ValueError(
-                f"Asset {holding.symbol!r}: configured currency {metadata.currency} "
+                f"Asset {symbol!r}: configured currency {metadata.currency} "
                 f"conflicts with reported currency {holding.currency}"
             )
         if holding.asset_type == "Real Estate":
-            if holding.symbol in real_estate_yields and real_estate_yields[holding.symbol] != holding.yield_percent:
-                raise ValueError(f"Asset {holding.symbol!r} has inconsistent yields")
-            if holding.symbol in real_estate_urls and real_estate_urls[holding.symbol] != holding.url:
-                raise ValueError(f"Asset {holding.symbol!r} has inconsistent URLs")
-            real_estate_yields[holding.symbol] = holding.yield_percent
-            real_estate_urls[holding.symbol] = holding.url
-        by_symbol[holding.symbol][holding.account_column] += holding.market_value
+            if symbol in real_estate_yields and real_estate_yields[symbol] != holding.yield_percent:
+                raise ValueError(f"Asset {symbol!r} has inconsistent yields")
+            if symbol in real_estate_urls and real_estate_urls[symbol] != holding.url:
+                raise ValueError(f"Asset {symbol!r} has inconsistent URLs")
+            real_estate_yields[symbol] = holding.yield_percent
+            real_estate_urls[symbol] = holding.url
+        by_symbol[symbol][holding.account_column] += holding.market_value
 
     for symbol, metadata in metadata_by_symbol.items():
         currency = metadata.currency
@@ -176,8 +178,11 @@ def _metadata_document(metadata: AssetMetadata) -> dict[str, str]:
 
 
 def _holding_metadata(
-    holding: Holding, asset_metadata: Mapping[str, AssetMetadata]
+    holding: Holding,
+    asset_metadata: Mapping[str, AssetMetadata],
+    symbol: str | None = None,
 ) -> AssetMetadata:
+    symbol = symbol or canonical_symbol(holding.symbol, None)
     if holding.symbol in CASH_METADATA:
         return CASH_METADATA[holding.symbol]
     supplied = (holding.asset_type, holding.market, holding.sector, holding.risk)
@@ -189,8 +194,8 @@ def _holding_metadata(
             holding.currency,
         )
     try:
-        return asset_metadata[holding.symbol]
+        return asset_metadata[symbol]
     except KeyError as exc:
         raise ValueError(
-            f"Asset {holding.symbol!r} is missing deterministic classification mappings"
+            f"Asset {symbol!r} is missing deterministic classification mappings"
         ) from exc

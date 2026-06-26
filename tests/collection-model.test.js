@@ -11,11 +11,11 @@ function portfolio(date, fundValue, bankValue, fundYield = 4) {
       allowed_currencies: ["CAD", "USD"],
       assets: {
         Fund: {
-          type: "ETF", sector: "Mixed", market: "US", risk: "Medium",
+          type: "ETF", sector: "Broad Market", market: "US", risk: "Medium",
           currency: "USD", region: "North America",
         },
         Bank: {
-          type: "Stock", sector: "Finance", market: "Canada", risk: "Low",
+          type: "Stock", sector: "Financials", market: "Canada", risk: "Low",
           currency: "CAD", region: "North America",
         },
       },
@@ -66,7 +66,7 @@ test("value history stacks selected accounts by a classification", () => {
   assert.deepEqual(derived.totals, [340, 510]);
   assert.deepEqual(
     Object.fromEntries(derived.series.map((series) => [series.category, series.values])),
-    { Finance: [200, 300], Mixed: [140, 210] },
+    { Financials: [200, 300], "Broad Market": [140, 210] },
   );
 });
 
@@ -84,7 +84,7 @@ test("history series are ordered by the final selected snapshot", () => {
     stackBy: "sector",
     metric: "value",
   });
-  assert.deepEqual(derived.series.map((series) => series.category), ["Finance", "Mixed"]);
+  assert.deepEqual(derived.series.map((series) => series.category), ["Financials", "Broad Market"]);
   assert.deepEqual(derived.series.map((series) => series.values.at(-1)), [300, 140]);
 });
 

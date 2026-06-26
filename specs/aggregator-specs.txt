@@ -63,13 +63,15 @@ inputs/config.json contains these keys:
 - allowed_asset_types, allowed_markets, allowed_risks, and allowed_currencies.
 - wealthsimple_account_types: provider account type to account-column mappings.
 - td_direct_investing_accounts: account number to account column and currency.
+- rbc_direct_investing_accounts: account number to account-column mappings.
+- symbol_aliases: bank-export symbols mapped to canonical asset symbols.
 - assets: Type/Market/Sector/Risk/Currency metadata keyed by market asset identifier.
 
 allowed_currencies is a non-empty list of unique uppercase three-letter currency
 codes and must include CAD. It must also support the built-in CASH-CAD and CASH-USD
-assets. Every configured asset, TDDI account, and currency observed in an input
-statement must use an allowed currency. A statement currency that conflicts with
-the configured currency for an asset is an error.
+assets. Every configured asset, TDDI account, RBC account statement currency, and
+currency observed in an input statement must use an allowed currency. A statement
+currency that conflicts with the configured currency for an asset is an error.
 
 The complete validated configuration document is embedded unchanged in
 portfolio.json under configuration.
@@ -79,7 +81,11 @@ Input Parsers
 =============
 
 Each institution or manual format implements the common parser interface. The sample
-portfolio covers Wealthsimple, TD Direct Investing, and real-estates.csv.
+portfolio covers Wealthsimple, TD Direct Investing, RBC Direct Investing, and
+real-estates.csv.
+
+Provider symbols may be canonicalized after parsing when different institutions
+export equivalent assets with different names.
 
 Real estate uses this format:
 
@@ -138,7 +144,7 @@ from the yield record's providerSymbol.
 holdings contains one record per asset:
 
     {
-      "asset": "MSFT",
+      "asset": "FAKEUS",
       "accounts": {
         "RRSP": 15000,
         "TFSA": 8000

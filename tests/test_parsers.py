@@ -6,6 +6,7 @@ from pathlib import Path
 from aggregator.config import load_portfolio_config
 from aggregator.models import Holding
 from aggregator.parsers.real_estate import RealEstateParser
+from aggregator.parsers.rbc import RbcParser
 from aggregator.parsers.tddi import TddiParser
 from aggregator.parsers.wealthsimple import WealthsimpleParser
 from aggregator.service import discover_csv_files, parse_files
@@ -20,7 +21,7 @@ PORTFOLIO_CONFIG = load_portfolio_config(PORTFOLIO_DIRECTORY)
 class ParserTests(unittest.TestCase):
     def test_sample_files_have_one_parser_and_expected_holding_counts(self):
         holdings = parse_files(discover_csv_files(PORTFOLIO_DIRECTORY), PORTFOLIO_CONFIG)
-        self.assertEqual(len(holdings), 7)
+        self.assertEqual(len(holdings), 9)
 
     def test_tddi_uses_account_base_currency_for_cash_and_securities(self):
         holdings = TddiParser().parse(INPUTS / "tddi-sample.csv", PORTFOLIO_CONFIG)
@@ -40,11 +41,33 @@ class ParserTests(unittest.TestCase):
             path = Path(directory) / "wealthsimple.csv"
             path.write_text(
                 "Account Type,Symbol,Market Value,Market Value Currency\n"
-                "TFSA,MSFT,100,EUR\n",
+                "TFSA,FAKEUS,100,EUR\n",
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ValueError, "unsupported currency 'EUR'"):
                 WealthsimpleParser().parse(path, PORTFOLIO_CONFIG)
+
+    def test_rbc_uses_configured_account_mapping_and_row_currency(self):
+        holdings = RbcParser().parse(INPUTS / "rbc-sample.csv", PORTFOLIO_CONFIG)
+        self.assertEqual(holdings, [
+            Holding("CASH-USD", "USD", "Sample Joint", Decimal("123.45")),
+            Holding("FUNDGLB", "USD", "Sample Joint", Decimal("1000")),
+        ])
+
+    def test_rbc_rejects_unmapped_account(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "rbc.csv"
+            path.write_text(
+                "Account: UNKNOWN - Investment\n"
+                "Currency,Cash,Investments,Short,Total,Exchange Rate to CAD\n"
+                "USD,1,0,N/A,1,1.4\n"
+                ",Product,Symbol,Name,Quantity,Last Price,Currency,Change $,Change %,"
+                "Total Book Cost,Total Market Value\n"
+                "USD Holdings,ETFs and ETNs,FUNDGLB,Fund,1,1,USD,0,0%,1,1\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "RBC account 'UNKNOWN'"):
+                RbcParser().parse(path, PORTFOLIO_CONFIG)
 
     def test_real_estate_uses_row_metadata_and_real_estate_account(self):
         holdings = RealEstateParser().parse(INPUTS / "real-estates.csv", PORTFOLIO_CONFIG)

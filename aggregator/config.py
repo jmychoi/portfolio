@@ -33,6 +33,8 @@ class PortfolioConfig:
     allowed_currencies: frozenset[str]
     wealthsimple_account_types: Mapping[str, str]
     tddi_accounts: Mapping[str, TddiAccount]
+    rbc_accounts: Mapping[str, str]
+    symbol_aliases: Mapping[str, str]
     assets: Mapping[str, AssetMetadata]
 
 
@@ -71,6 +73,8 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
         "allowed_currencies",
         "wealthsimple_account_types",
         "td_direct_investing_accounts",
+        "rbc_direct_investing_accounts",
+        "symbol_aliases",
         "assets",
     }
     _require_exact_keys(str(path), raw, expected)
@@ -95,6 +99,10 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
     tddi_accounts = _load_tddi_accounts(
         path, raw["td_direct_investing_accounts"], account_columns, allowed_currencies
     )
+    rbc_accounts = _load_rbc_accounts(
+        path, raw["rbc_direct_investing_accounts"], account_columns
+    )
+    symbol_aliases = _load_symbol_aliases(path, raw["symbol_aliases"])
     assets = _load_assets(
         path,
         raw["assets"],
@@ -112,6 +120,8 @@ def load_portfolio_config(portfolio_directory: Path) -> PortfolioConfig:
         allowed_currencies=allowed_currencies,
         wealthsimple_account_types=MappingProxyType(wealthsimple_accounts),
         tddi_accounts=MappingProxyType(tddi_accounts),
+        rbc_accounts=MappingProxyType(rbc_accounts),
+        symbol_aliases=MappingProxyType(symbol_aliases),
         assets=MappingProxyType(assets),
     )
 
@@ -154,6 +164,40 @@ def _load_tddi_accounts(
             raise ValueError(f"{label}: unsupported currency {currency!r}")
         accounts[account_number] = TddiAccount(account_column, currency)
     return accounts
+
+
+def _load_rbc_accounts(
+    path: Path, raw: object, account_columns: tuple[str, ...]
+) -> dict[str, str]:
+    if not isinstance(raw, dict):
+        raise ValueError(f"{path}: rbc_direct_investing_accounts must be an object")
+    accounts = {}
+    for account_number, values in raw.items():
+        label = f"{path}: RBC account {account_number!r}"
+        if not account_number.strip() or not isinstance(values, dict):
+            raise ValueError(f"{label} must be a non-empty object")
+        _require_exact_keys(label, values, {"account"})
+        account_column = _required_string(label, values, "account")
+        if account_column not in account_columns:
+            raise ValueError(f"{label}: unknown account column {account_column!r}")
+        accounts[account_number] = account_column
+    return accounts
+
+
+def _load_symbol_aliases(path: Path, raw: object) -> dict[str, str]:
+    if not isinstance(raw, dict):
+        raise ValueError(f"{path}: symbol_aliases must be an object")
+    aliases = {}
+    for source, target in raw.items():
+        label = f"{path}: symbol alias {source!r}"
+        if not isinstance(source, str) or not source.strip():
+            raise ValueError(f"{label} must be non-empty")
+        if not isinstance(target, str) or not target.strip():
+            raise ValueError(f"{label}: target must be non-empty")
+        if source == target:
+            raise ValueError(f"{label}: target must differ from source")
+        aliases[source] = target
+    return aliases
 
 
 def _load_assets(

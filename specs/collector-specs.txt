@@ -13,7 +13,7 @@ Command-Line Interface
 
 Exactly one existing directory containing portfolio JSON snapshots is required:
 
-    python collect.py C:\Users\jmych\GoogleDrive\Finance\Portfolios
+    python collect.py C:\PortfolioData\Snapshots
 
 The collector reads non-recursive *.json files, excluding its selected output path.
 The default output is <portfolio-directory>/portfolios.json. --output may specify a

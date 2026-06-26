@@ -11,8 +11,8 @@ const DOCUMENT = {
     account_columns: ["Cash", "Cash (Joint)", "RRSP", "RRSP (Spousal)", "LIRA"],
     allowed_currencies: ["CAD", "USD"],
     assets: {
-      "Fund, A": { type: "ETF", market: "US", sector: "Mixed", risk: "Medium", currency: "USD" },
-      Bank: { type: "Stock", market: "Canada", sector: "Finance", risk: "Low", currency: "CAD" },
+      "Fund, A": { type: "ETF", market: "US", sector: "Broad Market", risk: "Medium", currency: "USD" },
+      Bank: { type: "Stock", market: "Canada", sector: "Financials", risk: "Low", currency: "CAD" },
     },
   },
   exchangeRates: {

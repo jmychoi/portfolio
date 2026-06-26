@@ -19,15 +19,24 @@ SAMPLE_CONFIG = load_portfolio_config(SAMPLE_DIRECTORY)
 SAMPLE_DOCUMENT = load_portfolio_config_document(SAMPLE_DIRECTORY)
 TEST_ASSETS = dict(SAMPLE_CONFIG.assets)
 TEST_ASSETS.update({
-    "ATZ": AssetMetadata("Stock", "Canada", "Retail", "High", "CAD"),
-    "NVDA": AssetMetadata("Stock", "US", "Technology", "High", "USD"),
+    "FAKECON": AssetMetadata("Stock", "Canada", "Consumer", "High", "CAD"),
+    "FAKEMM.U": AssetMetadata("ETF", "US", "Cash", "Low", "USD"),
+    "FAKETECH": AssetMetadata("Stock", "US", "Technology", "High", "USD"),
 })
-TEST_CONFIG = replace(SAMPLE_CONFIG, assets=MappingProxyType(TEST_ASSETS))
+TEST_CONFIG = replace(
+    SAMPLE_CONFIG,
+    assets=MappingProxyType(TEST_ASSETS),
+    symbol_aliases=MappingProxyType({
+        **SAMPLE_CONFIG.symbol_aliases,
+        "FAKEMM": "FAKEMM.U",
+    }),
+)
 TEST_CONFIGURATION = {**SAMPLE_DOCUMENT, "assets": {
     **SAMPLE_DOCUMENT["assets"],
-    "ATZ": {"type": "Stock", "market": "Canada", "sector": "Retail", "risk": "High", "currency": "CAD"},
-    "NVDA": {"type": "Stock", "market": "US", "sector": "Technology", "risk": "High", "currency": "USD"},
-}}
+    "FAKECON": {"type": "Stock", "market": "Canada", "sector": "Consumer", "risk": "High", "currency": "CAD"},
+    "FAKEMM.U": {"type": "ETF", "market": "US", "sector": "Cash", "risk": "Low", "currency": "USD"},
+    "FAKETECH": {"type": "Stock", "market": "US", "sector": "Technology", "risk": "High", "currency": "USD"},
+}, "symbol_aliases": {**SAMPLE_DOCUMENT["symbol_aliases"], "FAKEMM": "FAKEMM.U"}}
 TEST_RATES = {
     "CAD": ExchangeRate("CAD", Decimal("1"), "", ""),
     "USD": ExchangeRate("USD", Decimal("1.415"), "2026-06-19", "test"),
@@ -71,6 +80,17 @@ class PortfolioDocumentTests(unittest.TestCase):
             "Sample Joint": Decimal("1.234567"), "Sample Registered": Decimal("2"),
         })
         self.assertEqual(set(holding), {"asset", "accounts"})
+
+    def test_symbol_aliases_are_canonicalized(self):
+        document = build([
+            Holding("FAKEMM", "USD", "Sample Joint", Decimal("10")),
+            Holding("FAKEMM.U", "USD", "Sample Registered", Decimal("20")),
+        ])
+        holding = next(item for item in document["holdings"] if item["asset"] == "FAKEMM.U")
+        self.assertEqual(holding["accounts"], {
+            "Sample Joint": Decimal("10"), "Sample Registered": Decimal("20"),
+        })
+        self.assertNotIn("FAKEMM", {item["asset"] for item in document["holdings"]})
 
     def test_market_yield_cache_is_embedded_with_provenance(self):
         record = YieldRecord("FAKEAI", "FAKEAI", Decimal("0.678"), "2026-06-19", "test", "ok")

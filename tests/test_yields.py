@@ -4,11 +4,14 @@ from decimal import Decimal
 from pathlib import Path
 
 from aggregator.asset_urls import yahoo_finance_url
+from aggregator.config import AssetMetadata
+from aggregator.models import Holding
 from aggregator.yields import (
     YieldRecord,
     annualized_latest_yield,
     ensure_yields_file,
     load_yields_file,
+    market_assets,
     yfinance_symbol,
 )
 
@@ -25,34 +28,45 @@ class YieldTests(unittest.TestCase):
         self.assertEqual(annualized_latest_yield(Decimal("100"), []), Decimal("0"))
 
     def test_yfinance_symbol_translation(self):
-        self.assertEqual(yfinance_symbol("MSFT", "USD"), "MSFT")
-        self.assertEqual(yfinance_symbol("BMO", "CAD"), "BMO.TO")
-        self.assertEqual(yfinance_symbol("HISU.U", "USD"), "HISU-U.TO")
+        self.assertEqual(yfinance_symbol("FAKEUS", "USD"), "FAKEUS")
+        self.assertEqual(yfinance_symbol("FAKECA", "CAD"), "FAKECA.TO")
+        self.assertEqual(yfinance_symbol("FAKEMM.U", "USD"), "FAKEMM-U.TO")
         self.assertEqual(
-            yahoo_finance_url("HISU-U.TO"),
-            "https://finance.yahoo.com/quote/HISU-U.TO",
+            yahoo_finance_url("FAKEMM-U.TO"),
+            "https://finance.yahoo.com/quote/FAKEMM-U.TO",
         )
 
+    def test_market_assets_canonicalizes_symbol_aliases(self):
+        assets = market_assets(
+            [Holding("FAKEMM", "USD", "Cash", Decimal("10"))],
+            {"FAKEMM.U": AssetMetadata("ETF", "US", "Cash", "Low", "USD")},
+            {"FAKEMM": "FAKEMM.U"},
+        )
+        self.assertEqual(assets, {"FAKEMM.U": "FAKEMM-U.TO"})
+
     def test_missing_assets_are_fetched_and_cached(self):
-        expected = YieldRecord("MSFT", "MSFT", Decimal("0.75"), "2026-06-19", "test", "ok")
+        expected = YieldRecord("FAKEUS", "FAKEUS", Decimal("0.75"), "2026-06-19", "test", "ok")
         with tempfile.TemporaryDirectory() as directory:
             path = ensure_yields_file(
-                Path(directory), {"MSFT": "MSFT"},
-                fetcher=lambda assets: {"MSFT": expected},
+                Path(directory), {"FAKEUS": "FAKEUS"},
+                fetcher=lambda assets: {"FAKEUS": expected},
             )
             self.assertEqual(path, Path(directory) / "cache" / "yields.csv")
-            self.assertEqual(load_yields_file(path)["MSFT"], expected)
+            self.assertEqual(load_yields_file(path)["FAKEUS"], expected)
 
     def test_cached_assets_are_not_fetched_again(self):
-        record = YieldRecord("MSFT", "MSFT", Decimal("0.75"), "2026-06-19", "test", "ok")
+        record = YieldRecord("FAKEUS", "FAKEUS", Decimal("0.75"), "2026-06-19", "test", "ok")
         with tempfile.TemporaryDirectory() as directory:
             portfolio_directory = Path(directory)
-            ensure_yields_file(portfolio_directory, {"MSFT": "MSFT"}, fetcher=lambda assets: {"MSFT": record})
+            ensure_yields_file(
+                portfolio_directory, {"FAKEUS": "FAKEUS"},
+                fetcher=lambda assets: {"FAKEUS": record},
+            )
 
             def unexpected_fetch(assets):
                 self.fail("cached yield should be reused")
 
-            ensure_yields_file(portfolio_directory, {"MSFT": "MSFT"}, fetcher=unexpected_fetch)
+            ensure_yields_file(portfolio_directory, {"FAKEUS": "FAKEUS"}, fetcher=unexpected_fetch)
 
     def test_unavailable_yield_remains_blank_in_cache(self):
         record = YieldRecord("PRIVATE", "PRIVATE", None, "", "yfinance", "unavailable")

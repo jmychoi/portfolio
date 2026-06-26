@@ -47,7 +47,7 @@
       "FAKEBANK": {
         "type": "Stock",
         "market": "Canada",
-        "sector": "Finance",
+        "sector": "Financials",
         "risk": "Medium",
         "currency": "CAD"
       },
@@ -72,6 +72,9 @@
         "risk": "Low",
         "currency": "USD"
       }
+    },
+    "symbol_aliases": {
+      "FUNDALT": "FUNDGLB"
     }
   },
   "exchangeRates": {

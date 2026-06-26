@@ -9,6 +9,7 @@ from collections.abc import Mapping
 
 from aggregator.config import AssetMetadata
 from aggregator.models import Holding
+from aggregator.symbols import canonical_symbol
 
 
 YIELD_COLUMNS = ("Asset", "Provider Symbol", "Yield", "As Of", "Source", "Status")
@@ -26,19 +27,22 @@ class YieldRecord:
 
 
 def market_assets(
-    holdings: list[Holding], asset_metadata: Mapping[str, AssetMetadata]
+    holdings: list[Holding],
+    asset_metadata: Mapping[str, AssetMetadata],
+    symbol_aliases: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
     assets = {}
     for holding in holdings:
-        metadata = asset_metadata.get(holding.symbol)
+        asset = canonical_symbol(holding.symbol, symbol_aliases)
+        metadata = asset_metadata.get(asset)
         asset_type = holding.asset_type or (metadata.asset_type if metadata else None)
         if asset_type not in {"Stock", "ETF"}:
             continue
-        provider_symbol = yfinance_symbol(holding.symbol, holding.currency)
-        previous = assets.setdefault(holding.symbol, provider_symbol)
+        provider_symbol = yfinance_symbol(asset, holding.currency)
+        previous = assets.setdefault(asset, provider_symbol)
         if previous != provider_symbol:
             raise ValueError(
-                f"Asset {holding.symbol!r} maps to multiple yfinance symbols"
+                f"Asset {asset!r} maps to multiple yfinance symbols"
             )
     return assets
 

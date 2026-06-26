@@ -15,7 +15,10 @@ from aggregator.yields import ensure_yields_file, load_yields_file, market_asset
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Aggregate Wealthsimple, TD Direct Investing, and real-estate CSV holdings."
+        description=(
+            "Aggregate Wealthsimple, TD Direct Investing, RBC Direct Investing, "
+            "and real-estate CSV holdings."
+        )
     )
     parser.add_argument(
         "portfolio_directory", type=Path,
@@ -64,7 +67,10 @@ def main() -> None:
     paths = discover_csv_files(portfolio_directory)
     holdings = parse_files(paths, portfolio_config)
     yield_path = ensure_yields_file(
-        portfolio_directory, market_assets(holdings, portfolio_config.assets)
+        portfolio_directory,
+        market_assets(
+            holdings, portfolio_config.assets, portfolio_config.symbol_aliases
+        ),
     )
     yield_records = load_yields_file(yield_path)
     document = build_portfolio_document(
