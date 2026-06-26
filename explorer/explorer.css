@@ -448,23 +448,54 @@ footer {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --snapshot-analysis-min-height: 360px;
+    --history-chart-min-height: 360px;
+  }
+
   main { width: calc(100% - 20px); }
-  .site-header { padding: 16px 14px; }
+  .site-header { padding: 12px 10px; gap: 10px; }
+  .site-header > div:not(.brand-mark):not(.header-actions) { display: none; }
+  .brand-mark { width: 42px; height: 42px; border-radius: 13px; }
   .header-actions .button { padding-inline: 11px; font-size: .72rem; }
-  .scheme-picker select { min-width: 108px; padding-left: 9px; font-size: .72rem; }
+  .scheme-picker,
+  #theme-toggle { display: none !important; }
   .file-stage { min-height: 480px; padding: 34px 20px; }
   .header-actions { flex-wrap: wrap; justify-content: flex-end; }
   .loaded-context { order: 3; width: 100%; justify-content: flex-end; flex-wrap: wrap; }
   .file-label { max-width: 100%; }
   .context-select { width: 100%; max-width: none; }
   .control-panel { grid-template-columns: 1fr; }
-  .account-control { grid-column: auto; }
-  .metric-grid { grid-template-columns: 1fr 1fr; }
-  .analysis-grid { display: flex; flex-direction: column-reverse; }
-  .chart-panel { width: 100%; display: block; }
+  .account-control { display: none; }
+  #snapshot-view {
+    grid-template-rows: auto minmax(var(--snapshot-analysis-min-height), 1fr);
+    gap: 12px;
+  }
+  #snapshot-view > .metric-grid,
+  .history-dashboard > .metric-grid {
+    display: none;
+  }
+  .analysis-grid { display: block; min-height: var(--snapshot-analysis-min-height); }
+  #snapshot-view .chart-panel { display: none; }
   .table-panel { width: 100%; }
+  .panel-heading { min-height: 62px; padding: 14px 16px; }
+  .table-wrap { height: 62vh; min-height: 360px; }
+  table { font-size: .76rem; }
+  .sort-button { padding: 10px 9px; font-size: .68rem; }
+  td { padding: 10px 9px; }
+  #snapshot-view th:not(.mobile-keep-column),
+  #snapshot-view td:not(.mobile-keep-column) {
+    display: none;
+  }
+  #snapshot-view .column-asset,
+  #snapshot-view .column-label {
+    min-width: 9rem;
+    max-width: 12rem;
+    white-space: normal;
+  }
+  #snapshot-view .group-count { display: none; }
   .sort-help { display: none; }
-  footer { flex-direction: column; gap: 5px; }
+  footer { display: none; }
 }
 
 @media (max-height: 700px) {

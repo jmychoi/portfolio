@@ -4,6 +4,7 @@
   const Model = window.PortfolioModel;
   const CollectionModel = window.PortfolioCollectionModel;
   const UI_SCHEMES = new Set(["forest", "ocean", "aubergine", "amber"]);
+  const MOBILE_QUERY = window.matchMedia("(max-width: 760px)");
   const CHART_COLORS = [
     "#2e7d32", "#1565c0", "#f57c00", "#8e24aa", "#d32f2f", "#00897b",
     "#c0a000", "#6d4c41", "#5e35b1", "#039be5", "#7cb342", "#c2185b",
@@ -50,6 +51,11 @@
   let historyView;
 
   initializeTheme();
+  if (MOBILE_QUERY.addEventListener) {
+    MOBILE_QUERY.addEventListener("change", handleMobileModeChange);
+  } else {
+    MOBILE_QUERY.addListener(handleMobileModeChange);
+  }
   snapshotView = window.SnapshotView.create({ state, render, chartColors, setHeading });
   historyView = window.HistoryView.create({ state, render, chartColors, setHeading });
   historyView.bindHistoryControls();
@@ -178,8 +184,24 @@
 
   function render() {
     if (!state.portfolio) return;
+    applyMobileAccountDefaults();
     if (state.collection && state.viewMode === "history") historyView.renderHistory();
     else snapshotView.renderSnapshot();
+  }
+
+  function handleMobileModeChange() {
+    initializeTheme();
+    if (state.portfolio) render();
+  }
+
+  function applyMobileAccountDefaults() {
+    if (!MOBILE_QUERY.matches) return;
+    state.selectedAccounts = new Set(state.portfolio.accounts);
+    snapshotView.syncAccountCheckboxes();
+    if (state.collection) {
+      state.historySelectedAccounts = new Set(state.collection.accounts);
+      historyView.syncHistoryAccountCheckboxes();
+    }
   }
 
   function setHeading(label) {
@@ -227,8 +249,10 @@
   function initializeTheme() {
     let theme = "dark";
     let scheme = "forest";
-    try { theme = localStorage.getItem("explorer-theme") || "dark"; } catch (_) { /* use default */ }
-    try { scheme = localStorage.getItem("explorer-color-scheme") || "forest"; } catch (_) { /* use default */ }
+    if (!MOBILE_QUERY.matches) {
+      try { theme = localStorage.getItem("explorer-theme") || "dark"; } catch (_) { /* use default */ }
+      try { scheme = localStorage.getItem("explorer-color-scheme") || "forest"; } catch (_) { /* use default */ }
+    }
     applyTheme(theme === "light" ? "light" : "dark");
     applyColorScheme(UI_SCHEMES.has(scheme) ? scheme : "forest");
   }

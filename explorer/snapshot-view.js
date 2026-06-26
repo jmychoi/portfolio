@@ -352,6 +352,10 @@
   }
 
   function applyColumnClasses(element, column) {
+    element.classList.add(`column-${column.key.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`);
+    if (["asset", "label", "totalCad", "holdingPct", "projectedIncome"].includes(column.key)) {
+      element.classList.add("mobile-keep-column");
+    }
     if (column.numeric) element.classList.add("number");
     if (column.account) element.classList.add("account-column");
     if (column.accountStart) element.classList.add("account-column-start");
