@@ -63,10 +63,10 @@ Interaction
 
 - Loading portfolio.json opens Snapshot view.
 - Loading portfolios.json opens History view by default.
-- When portfolios.json is loaded, the View selector switches between History and
-  Snapshot, and the Snapshot selector lists every embedded portfolio date.
-- Choosing a snapshot jumps to Snapshot view for that date. The user can switch
-  back to History without reloading the file.
+- When portfolios.json is loaded, the app header shows one context dropdown
+  containing History view followed by every embedded portfolio date.
+- Choosing a date jumps to Snapshot view for that date. Choosing History view
+  switches back to the history chart without reloading the file.
 - All configured accounts are selected initially.
 - Select All and Clear All controls update account selection.
 - Grouping choices are None, Type, Market, Sector, Risk, and Currency.
@@ -84,15 +84,20 @@ History View
 
 - Measure choices are Portfolio Value and Projected Annual Income.
 - Stack choices are Account and every discovered classification dimension.
-- Time Frame presets are YTD, 3M, 6M, 1Y, 2Y, 5Y, and Full date range.
-- From and To date controls restrict the x-axis; manual date edits create a custom
-  time frame.
+- Time Frame choices are YTD, 3M, 6M, 1Y, 2Y, 5Y, Full date range, and Custom.
+- From and To date controls are visible only when Custom is selected and restrict
+  the x-axis inclusively.
 - The chart is a filled stacked-area SVG with a total outline.
 - Straight segments connect actual portfolio observations on a time-scaled x-axis.
 - Hovering shows the nearest snapshot, total, category values, and income coverage.
 - The legend appears to the right of the chart on wide screens and stacks below on
   narrow screens.
 - The legend and tooltip show value and percent of total.
+- History chart colors are assigned by visible series order, not by category hash,
+  using a stable 36-color graph palette that does not change with UI color scheme.
+  Visible categories do not collide unless the palette is exhausted.
+- The history chart keeps a useful minimum height; short viewports may scroll
+  instead of squeezing the graph.
 
 
 Table and Totals
@@ -116,11 +121,19 @@ Formatting and Layout
 - FX rates retain useful precision.
 - Dark mode is the default; light mode is available.
 - Forest, Ocean, Aubergine, and Amber color schemes are independent of theme.
+- Graph colors use a stable categorical palette and do not change with the UI
+  color scheme.
 - Theme and color scheme persist when browser storage is available.
 - The dashboard expands to browser width and fits desktop browser height.
 - Overflow scrolls inside the relevant panel; narrow layouts use an internally
   scrolling main region.
-- The launch panel disappears after loading; Open another portfolio replaces input.
+- The snapshot analysis grid keeps a useful minimum height; short viewports may
+  scroll instead of squeezing the table and chart.
+- The front page has a top-right Choose portfolio JSON action and an inline
+  choose-file link in the drag-and-drop hint.
+- The front page art shows a rising time-series chart.
+- The launch panel disappears after loading; selecting the loaded filename opens
+  another portfolio file.
 
 
 Verification

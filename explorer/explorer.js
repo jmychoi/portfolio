@@ -3,27 +3,28 @@
 
   const Model = window.PortfolioModel;
   const CollectionModel = window.PortfolioCollectionModel;
-  const COLOR_SCHEMES = {
-    forest: ["#55c795", "#c98c2c", "#4c6fa8", "#9a5f86", "#529186", "#d06f47", "#6f7d45", "#7b6eb1", "#bb5969", "#3f879f", "#9a7544", "#52675d"],
-    ocean: ["#58b9df", "#4e86c5", "#59b6aa", "#7b78c8", "#3f9bb0", "#8aacc8", "#4b7794", "#68c4d2", "#8298d1", "#397a91", "#6b91a5", "#526975"],
-    aubergine: ["#c28ad8", "#8d74c9", "#d477a8", "#a65e91", "#7868aa", "#d091bd", "#9d6db2", "#b85d80", "#735b86", "#d0a3dc", "#8d5878", "#6e596f"],
-    amber: ["#e2a84b", "#c97b39", "#d3c15d", "#af7448", "#e09057", "#9a8e48", "#c85f45", "#d8b875", "#aa6531", "#e2c653", "#9d7952", "#75664e"],
-  };
+  const UI_SCHEMES = new Set(["forest", "ocean", "aubergine", "amber"]);
+  const CHART_COLORS = [
+    "#2e7d32", "#1565c0", "#f57c00", "#8e24aa", "#d32f2f", "#00897b",
+    "#c0a000", "#6d4c41", "#5e35b1", "#039be5", "#7cb342", "#c2185b",
+    "#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc948",
+    "#b07aa1", "#ff9da7", "#9c755f", "#bab0ac", "#1b9e77", "#d95f02",
+    "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666",
+    "#1f78b4", "#b2df8a", "#fb9a99", "#cab2d6", "#ff7f00", "#6a3d9a",
+  ];
 
   const elements = {
     fileStage: document.querySelector("#file-stage"),
+    headerChooseFile: document.querySelector("#header-choose-file"),
     chooseFile: document.querySelector("#choose-file"),
+    loadedContext: document.querySelector("#loaded-context"),
     replaceFile: document.querySelector("#replace-file"),
     themeToggle: document.querySelector("#theme-toggle"),
     colorScheme: document.querySelector("#color-scheme"),
     fileInput: document.querySelector("#file-input"),
     error: document.querySelector("#error-banner"),
     dashboard: document.querySelector("#dashboard"),
-    fileLabel: document.querySelector("#file-label"),
-    selectionSummary: document.querySelector("#selection-summary"),
-    viewControls: document.querySelector("#view-controls"),
-    viewMode: document.querySelector("#view-mode"),
-    snapshotSelect: document.querySelector("#snapshot-select"),
+    contextSelect: document.querySelector("#context-select"),
     snapshotView: document.querySelector("#snapshot-view"),
     historyView: document.querySelector("#history-view"),
   };
@@ -53,6 +54,7 @@
   historyView = window.HistoryView.create({ state, render, chartColors, setHeading });
   historyView.bindHistoryControls();
 
+  elements.headerChooseFile.addEventListener("click", () => elements.fileInput.click());
   elements.chooseFile.addEventListener("click", () => elements.fileInput.click());
   elements.replaceFile.addEventListener("click", () => elements.fileInput.click());
   elements.themeToggle.addEventListener("click", () => {
@@ -65,16 +67,14 @@
     try { localStorage.setItem("explorer-color-scheme", elements.colorScheme.value); } catch (_) { /* file:// storage may be unavailable */ }
     render();
   });
-  elements.viewMode.addEventListener("change", () => {
-    state.viewMode = elements.viewMode.value;
-    switchView();
-    render();
-  });
-  elements.snapshotSelect.addEventListener("change", () => {
-    state.snapshotIndex = Number(elements.snapshotSelect.value);
-    setPortfolioFromSnapshot();
-    state.viewMode = "snapshot";
-    elements.viewMode.value = "snapshot";
+  elements.contextSelect.addEventListener("change", () => {
+    if (elements.contextSelect.value === "history") {
+      state.viewMode = "history";
+    } else {
+      state.snapshotIndex = Number(elements.contextSelect.value.replace("snapshot:", ""));
+      setPortfolioFromSnapshot();
+      state.viewMode = "snapshot";
+    }
     switchView();
     render();
   });
@@ -111,7 +111,8 @@
       else openPortfolio(Model.loadPortfolioDocument(document));
       elements.fileStage.hidden = true;
       elements.dashboard.hidden = false;
-      elements.replaceFile.hidden = false;
+      elements.loadedContext.hidden = false;
+      elements.headerChooseFile.hidden = true;
       pageRoot().classList.add("dashboard-active");
       render();
     } catch (error) {
@@ -135,7 +136,8 @@
     state.selectedAccounts = new Set(portfolio.accounts);
     state.groupBy = "None";
     state.sortKeys = [{ key: "holdingPct", direction: "desc" }];
-    elements.viewControls.hidden = true;
+    initializeSinglePortfolioContext(portfolio);
+    elements.contextSelect.hidden = false;
     snapshotView.initializeControls();
     switchView();
   }
@@ -149,10 +151,10 @@
     state.historyMetric = "value";
     state.historyStackBy = "account";
     state.historyTimeFrame = "full";
+    initializeContextSelect();
     historyView.initializeCollectionControls();
     setPortfolioFromSnapshot();
-    elements.viewControls.hidden = false;
-    elements.viewMode.value = "history";
+    elements.contextSelect.hidden = false;
     switchView();
   }
 
@@ -169,8 +171,8 @@
     elements.snapshotView.hidden = state.viewMode !== "snapshot";
     elements.historyView.hidden = state.viewMode !== "history";
     if (state.collection) {
-      elements.snapshotSelect.value = String(state.snapshotIndex);
-      elements.viewMode.value = state.viewMode;
+      elements.contextSelect.value = state.viewMode === "history"
+        ? "history" : `snapshot:${state.snapshotIndex}`;
     }
   }
 
@@ -180,9 +182,33 @@
     else snapshotView.renderSnapshot();
   }
 
-  function setHeading(label, summary) {
-    elements.fileLabel.textContent = label;
-    elements.selectionSummary.textContent = summary;
+  function setHeading(label) {
+    elements.replaceFile.textContent = label;
+    elements.replaceFile.setAttribute("aria-label", `Choose another portfolio file. Current file: ${label}`);
+  }
+
+  function initializeContextSelect() {
+    elements.contextSelect.replaceChildren();
+    const history = document.createElement("option");
+    history.value = "history";
+    history.textContent = "History view";
+    elements.contextSelect.append(history);
+    state.collection.snapshots.forEach((snapshot, index) => {
+      const item = document.createElement("option");
+      item.value = `snapshot:${index}`;
+      item.textContent = snapshot.date;
+      elements.contextSelect.append(item);
+    });
+    elements.contextSelect.value = "history";
+  }
+
+  function initializeSinglePortfolioContext(portfolio) {
+    elements.contextSelect.replaceChildren();
+    const snapshot = document.createElement("option");
+    snapshot.value = "snapshot:0";
+    snapshot.textContent = portfolio.date;
+    elements.contextSelect.append(snapshot);
+    elements.contextSelect.value = "snapshot:0";
   }
 
   function showError(message) {
@@ -201,13 +227,13 @@
     try { theme = localStorage.getItem("explorer-theme") || "dark"; } catch (_) { /* use default */ }
     try { scheme = localStorage.getItem("explorer-color-scheme") || "forest"; } catch (_) { /* use default */ }
     applyTheme(theme === "light" ? "light" : "dark");
-    applyColorScheme(Object.prototype.hasOwnProperty.call(COLOR_SCHEMES, scheme) ? scheme : "forest");
+    applyColorScheme(UI_SCHEMES.has(scheme) ? scheme : "forest");
   }
 
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
     const dark = theme === "dark";
-    elements.themeToggle.textContent = dark ? "Light mode" : "Dark mode";
+    elements.themeToggle.textContent = dark ? "Light" : "Dark";
     elements.themeToggle.setAttribute("aria-pressed", String(dark));
   }
 
@@ -217,7 +243,7 @@
   }
 
   function chartColors() {
-    return COLOR_SCHEMES[document.documentElement.dataset.scheme] || COLOR_SCHEMES.forest;
+    return CHART_COLORS;
   }
 
   function pageRoot() {

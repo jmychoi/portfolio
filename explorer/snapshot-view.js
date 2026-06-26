@@ -112,11 +112,7 @@
   }
 
   function renderHeading(derived) {
-    const label = state.collection
-      ? `${state.filename} · ${state.viewMode === "history" ? "History" : state.portfolio.date}`
-      : state.filename;
-    const count = state.selectedAccounts.size;
-    setHeading(label, `${count} of ${state.portfolio.accounts.length} accounts · ${derived.rows.length} active assets`);
+    setHeading(state.filename);
   }
 
   function renderMetrics(summary) {

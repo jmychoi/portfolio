@@ -21,6 +21,13 @@
       <h1>Portfolio Explorer</h1>
     </div>
     <div class="header-actions">
+      <div id="loaded-context" class="loaded-context" hidden>
+        <button id="replace-file" class="file-label" type="button" title="Choose another portfolio file"></button>
+        <select id="context-select" class="context-select" aria-label="Explorer view" hidden></select>
+      </div>
+      <button id="header-choose-file" class="button button-primary" type="button">
+        Choose portfolio JSON
+      </button>
       <div class="scheme-picker">
         <select id="color-scheme" aria-label="Color scheme">
           <option value="forest">Forest</option>
@@ -30,10 +37,7 @@
         </select>
       </div>
       <button id="theme-toggle" class="button button-secondary" type="button" aria-pressed="true">
-        Light mode
-      </button>
-      <button id="replace-file" class="button button-secondary" type="button" hidden>
-        Open another portfolio
+        Light
       </button>
     </div>
   </header>
@@ -41,40 +45,25 @@
   <main>
     <section id="file-stage" class="file-stage" aria-labelledby="file-stage-title">
       <div class="file-stage-art" aria-hidden="true">
-        <span></span><span></span><span></span>
+        <svg class="stage-icon stage-trend-icon" viewBox="0 0 150 120" focusable="false">
+          <path class="stage-axis" d="M18 96 H134"></path>
+          <path class="stage-grid" d="M18 72 H134 M18 48 H134"></path>
+          <path class="stage-trend-shadow" d="M18 88 C38 84 48 78 62 76 C78 74 86 69 96 58 C108 45 116 29 134 18"></path>
+          <path class="stage-trend-line" d="M18 88 C38 84 48 78 62 76 C78 74 86 69 96 58 C108 45 116 29 134 18"></path>
+        </svg>
       </div>
       <p class="eyebrow">No upload. No server. Your data stays local.</p>
       <h2 id="file-stage-title">Explore your portfolio from every angle.</h2>
-      <p class="file-stage-copy">
-        Drop a generated <strong>portfolio.json</strong> or <strong>portfolios.json</strong> here, or choose it from disk.
+      <p class="drop-hint">
+        <button id="choose-file" class="text-link" type="button">Choose a portfolio JSON</button>,
+        or drag and drop the file anywhere in this panel.
       </p>
-      <button id="choose-file" class="button button-primary" type="button">Choose portfolio JSON</button>
-      <p class="drop-hint">You can also drag and drop the file anywhere in this panel.</p>
       <input id="file-input" type="file" accept=".json,application/json" hidden>
     </section>
 
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
 
     <section id="dashboard" class="dashboard" hidden aria-live="polite">
-      <div class="dashboard-heading">
-        <p id="file-label" class="file-label"></p>
-        <p id="selection-summary" class="selection-summary"></p>
-      </div>
-
-      <section id="view-controls" class="view-controls" aria-label="Explorer view controls" hidden>
-        <div class="control-group">
-          <label for="view-mode">View</label>
-          <select id="view-mode">
-            <option value="history">History</option>
-            <option value="snapshot">Snapshot</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label for="snapshot-select">Snapshot</label>
-          <select id="snapshot-select"></select>
-        </div>
-      </section>
-
       <div id="snapshot-view">
       <section class="control-panel" aria-label="Portfolio controls">
         <div class="control-group group-control">
@@ -192,13 +181,14 @@
               <option value="2y">2Y</option>
               <option value="5y">5Y</option>
               <option value="full">Full date range</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
-          <div class="control-group">
+          <div class="control-group custom-date-control">
             <label for="history-start-date">From</label>
             <input id="history-start-date" type="date">
           </div>
-          <div class="control-group">
+          <div class="control-group custom-date-control">
             <label for="history-end-date">To</label>
             <input id="history-end-date" type="date">
           </div>

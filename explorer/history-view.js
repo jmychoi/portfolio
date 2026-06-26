@@ -8,12 +8,12 @@
       style: "currency", currency: "CAD", minimumFractionDigits: 0, maximumFractionDigits: 0,
     });
     const elements = {
-      snapshotSelect: document.querySelector("#snapshot-select"),
       historyMetric: document.querySelector("#history-metric"),
       historyStackBy: document.querySelector("#history-stack-by"),
       historyTimeFrame: document.querySelector("#history-time-frame"),
       historyStartDate: document.querySelector("#history-start-date"),
       historyEndDate: document.querySelector("#history-end-date"),
+      customDateControls: document.querySelectorAll(".custom-date-control"),
       historySelectAllAccounts: document.querySelector("#history-select-all-accounts"),
       historyClearAllAccounts: document.querySelector("#history-clear-all-accounts"),
       historyAccounts: document.querySelector("#history-account-options"),
@@ -50,7 +50,6 @@
     });
     elements.historyStartDate.addEventListener("change", () => {
       state.historyStartDate = elements.historyStartDate.value;
-      markCustomHistoryTimeFrame();
       if (state.historyStartDate > state.historyEndDate) {
         state.historyEndDate = state.historyStartDate;
         elements.historyEndDate.value = state.historyEndDate;
@@ -59,7 +58,6 @@
     });
     elements.historyEndDate.addEventListener("change", () => {
       state.historyEndDate = elements.historyEndDate.value;
-      markCustomHistoryTimeFrame();
       if (state.historyEndDate < state.historyStartDate) {
         state.historyStartDate = state.historyEndDate;
         elements.historyStartDate.value = state.historyStartDate;
@@ -79,15 +77,6 @@
   }
 
   function initializeCollectionControls() {
-    elements.snapshotSelect.replaceChildren();
-    state.collection.snapshots.forEach((snapshot, index) => {
-      const item = document.createElement("option");
-      item.value = String(index);
-      item.textContent = snapshot.date;
-      elements.snapshotSelect.append(item);
-    });
-    elements.snapshotSelect.value = String(state.snapshotIndex);
-
     elements.historyMetric.value = state.historyMetric;
     elements.historyTimeFrame.value = state.historyTimeFrame;
     elements.historyStackBy.replaceChildren(collectionOption("account", "Account"));
@@ -133,10 +122,7 @@
       stackBy: state.historyStackBy,
       metric: state.historyMetric,
     });
-    setHeading(
-      `${state.filename} · History`,
-      `${derived.accounts.length} of ${state.collection.accounts.length} accounts · ${derived.snapshots.length} snapshots`
-    );
+    setHeading(state.filename);
     renderHistoryMetrics(derived);
     renderHistoryChart(derived);
   }
@@ -210,15 +196,15 @@
     }
 
     const bottoms = Array(derived.snapshots.length).fill(0);
-    for (const series of derived.series) {
+    derived.series.forEach((series, seriesIndex) => {
       const tops = series.values.map((value, index) => bottoms[index] + value);
-      const color = colorForHistory(series.category);
+      const color = colorForSeriesIndex(seriesIndex);
       svg.append(svgElement("path", {
         d: areaPath(times, tops, bottoms, x, y),
         class: "chart-area", fill: color, color,
       }));
       for (let index = 0; index < bottoms.length; index += 1) bottoms[index] = tops[index];
-    }
+    });
     svg.append(svgElement("path", {
       d: linePath(times, derived.totals, x, y), class: "chart-total-line",
     }));
@@ -285,12 +271,12 @@
   }
 
   function renderHistoryLegend(derived) {
-    for (const series of derived.series) {
+    derived.series.forEach((series, seriesIndex) => {
       const row = document.createElement("div");
       row.className = "legend-row";
       const swatch = document.createElement("span");
       swatch.className = "legend-swatch";
-      swatch.style.background = colorForHistory(series.category);
+      swatch.style.background = colorForSeriesIndex(seriesIndex);
       const label = document.createElement("span");
       label.className = "legend-label";
       label.textContent = series.category;
@@ -301,7 +287,7 @@
       value.textContent = `${money.format(latest)} (${historyPercent(total ? latest / total * 100 : 0)}%)`;
       row.append(swatch, label, value);
       elements.historyChartLegend.append(row);
-    }
+    });
   }
 
   function syncHistoryAccountCheckboxes() {
@@ -313,11 +299,14 @@
   function applyHistoryTimeFrame() {
     const minimum = state.collection.snapshots[0].date;
     const maximum = state.collection.snapshots.at(-1).date;
-    state.historyEndDate = maximum;
-    state.historyStartDate = historyFrameStart(state.historyTimeFrame, minimum, maximum);
+    if (state.historyTimeFrame !== "custom") {
+      state.historyEndDate = maximum;
+      state.historyStartDate = historyFrameStart(state.historyTimeFrame, minimum, maximum);
+    }
     elements.historyStartDate.value = state.historyStartDate;
     elements.historyEndDate.value = state.historyEndDate;
     elements.historyTimeFrame.value = state.historyTimeFrame;
+    toggleCustomDateControls();
   }
 
   function historyFrameStart(frame, minimum, maximum) {
@@ -331,15 +320,11 @@
     return candidate < minimum ? minimum : candidate;
   }
 
-  function markCustomHistoryTimeFrame() {
-    let custom = elements.historyTimeFrame.querySelector('option[value="custom"]');
-    if (!custom) {
-      custom = collectionOption("custom", "Custom");
-      custom.hidden = true;
-      elements.historyTimeFrame.append(custom);
-    }
-    state.historyTimeFrame = "custom";
-    elements.historyTimeFrame.value = "custom";
+  function toggleCustomDateControls() {
+    const hidden = state.historyTimeFrame !== "custom";
+    elements.customDateControls.forEach((control) => {
+      control.hidden = hidden;
+    });
   }
 
   function shiftMonth(value, offset) {
@@ -414,11 +399,9 @@
     }).format(value);
   }
 
-  function colorForHistory(category) {
+  function colorForSeriesIndex(index) {
     const colors = chartColors();
-    let hash = 0;
-    for (const character of category) hash = ((hash << 5) - hash + character.codePointAt(0)) | 0;
-    return colors[Math.abs(hash) % colors.length];
+    return colors[index % colors.length];
   }
 
 

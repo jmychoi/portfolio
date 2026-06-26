@@ -34,7 +34,7 @@ class StaticPageTests(unittest.TestCase):
     def test_portfolio_explorer_has_snapshot_and_history_controls(self):
         parser = self.parse("explorer.html")
         required = {
-            "file-input", "dashboard", "view-mode", "snapshot-select",
+            "file-input", "dashboard", "context-select",
             "group-by", "account-options", "table-body", "pie-container",
             "history-metric", "history-stack-by", "history-time-frame",
             "history-start-date", "history-end-date", "history-account-options",

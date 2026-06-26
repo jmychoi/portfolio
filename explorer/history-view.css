@@ -4,7 +4,7 @@
 .history-stage-art path:last-child { opacity: .4; }
 
 .history-controls {
-  grid-template-columns: repeat(5, minmax(130px, .55fr));
+  grid-template-columns: repeat(3, minmax(150px, .45fr)) repeat(2, minmax(130px, .35fr));
   align-items: end;
 }
 .history-controls input[type="date"] {
@@ -19,7 +19,7 @@
 }
 .history-account-control { grid-column: span 5; }
 
-.history-chart-panel { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.history-chart-panel { min-height: var(--history-chart-min-height); display: grid; grid-template-rows: auto minmax(0, 1fr); }
 .history-chart-body { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
 .history-chart-wrap { position: relative; min-height: 0; padding: 8px 14px 0; }
 .history-chart-container { width: 100%; height: 100%; min-height: 0; }
@@ -59,7 +59,7 @@
 }
 .history-legend .legend-row { min-width: 0; }
 
-body.dashboard-active .history-dashboard { grid-template-rows: auto auto auto minmax(0, 1fr); }
+body.dashboard-active .history-dashboard { grid-template-rows: auto auto auto minmax(var(--history-chart-min-height), 1fr); }
 
 @media (min-width: 1121px) and (max-height: 850px) {
   .history-dashboard { gap: 10px; }
