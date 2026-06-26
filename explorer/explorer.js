@@ -42,7 +42,7 @@
     historySelectedAccounts: new Set(),
     historyMetric: "value",
     historyStackBy: "account",
-    historyTimeFrame: "full",
+    historyTimeFrame: "previous",
     historyStartDate: "",
     historyEndDate: "",
   };
@@ -156,7 +156,7 @@
     state.historySelectedAccounts = new Set(collection.accounts);
     state.historyMetric = "value";
     state.historyStackBy = "account";
-    state.historyTimeFrame = "full";
+    state.historyTimeFrame = "previous";
     initializeContextSelect();
     historyView.initializeCollectionControls();
     setPortfolioFromSnapshot();

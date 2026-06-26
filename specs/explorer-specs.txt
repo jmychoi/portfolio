@@ -85,7 +85,8 @@ History View
 
 - Measure choices are Portfolio Value and Projected Annual Income.
 - Stack choices are Account and every discovered classification dimension.
-- Time Frame choices are YTD, 3M, 6M, 1Y, 2Y, 5Y, Full date range, and Custom.
+- Time Frame choices are Last change, 1M, 3M, 6M, YTD, 1Y, 2Y,
+  5Y, Full date range, and Custom. Last change is the default.
 - From and To date controls are visible only when Custom is selected and restrict
   the x-axis inclusively.
 - The chart is a filled stacked-area SVG with a total outline.

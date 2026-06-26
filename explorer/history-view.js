@@ -311,6 +311,10 @@
 
   function historyFrameStart(frame, minimum, maximum) {
     if (frame === "full") return minimum;
+    if (frame === "previous") {
+      const snapshots = state.collection.snapshots;
+      return snapshots.length >= 2 ? snapshots.at(-2).date : minimum;
+    }
     const latest = parseDateParts(maximum);
     let candidate;
     if (frame === "ytd") candidate = `${latest.year}-01-01`;
