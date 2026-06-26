@@ -460,6 +460,7 @@ footer {
   .header-actions .button { padding-inline: 11px; font-size: .72rem; }
   .scheme-picker,
   #theme-toggle { display: none !important; }
+  .file-stage .drop-hint { display: none; }
   .file-stage { min-height: 480px; padding: 34px 20px; }
   .header-actions { flex-wrap: wrap; justify-content: flex-end; }
   .loaded-context { order: 3; width: 100%; justify-content: flex-end; flex-wrap: wrap; }
