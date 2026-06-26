@@ -124,6 +124,7 @@
   }
 
   function groupAssets(derived, groupBy) {
+    if (groupBy === "Account") return groupAssetsByAccount(derived);
     const property = {
       Type: "type", Market: "market", Sector: "sector", Risk: "risk", Currency: "currency",
     }[groupBy];
@@ -153,6 +154,33 @@
       if (!group.knownYieldValue) group.projectedIncome = null;
     }
     return result;
+  }
+
+  function groupAssetsByAccount(derived) {
+    return derived.accounts.map((account) => {
+      const group = {
+        label: account, totalCad: 0, projectedIncome: 0, knownYieldValue: 0,
+        knownYieldIncome: 0, assetCount: 0, holdingPct: 0, yieldPct: null,
+      };
+      for (const row of derived.rows) {
+        const valueCad = row.selectedValues[account] * row.fxRate;
+        if (!valueCad) continue;
+        group.totalCad += valueCad;
+        group.assetCount += 1;
+        if (row.yieldPct !== null) {
+          const income = valueCad * row.yieldPct / 100;
+          group.projectedIncome += income;
+          group.knownYieldIncome += income;
+          group.knownYieldValue += valueCad;
+        }
+      }
+      group.holdingPct = derived.portfolioTotalCad
+        ? group.totalCad / derived.portfolioTotalCad * 100 : 0;
+      group.yieldPct = group.knownYieldValue
+        ? group.knownYieldIncome / group.knownYieldValue * 100 : null;
+      if (!group.knownYieldValue) group.projectedIncome = null;
+      return group;
+    }).filter((group) => group.totalCad > 0);
   }
 
   function summarize(derived) {

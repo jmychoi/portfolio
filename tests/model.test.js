@@ -113,6 +113,22 @@ test("grouping recalculates weighted yield and portfolio share", () => {
   assert.equal(us.projectedIncome, 8.96);
 });
 
+test("grouping by account aggregates selected account values", () => {
+  const portfolio = Model.loadPortfolio(json());
+  const derived = Model.deriveAssets(portfolio, new Set(["Cash", "RRSP"]));
+  const groups = Model.groupAssets(derived, "Account");
+  const cash = groups.find((group) => group.label === "Cash");
+  const rrsp = groups.find((group) => group.label === "RRSP");
+  assert.equal(cash.totalCad, 340);
+  assert.equal(cash.assetCount, 2);
+  assert.equal(cash.projectedIncome, 9.6);
+  assert.equal(cash.yieldPct, 9.6 / 340 * 100);
+  assert.equal(rrsp.totalCad, 100);
+  assert.equal(rrsp.assetCount, 1);
+  assert.equal(rrsp.projectedIncome, 2);
+  assert.equal(rrsp.yieldPct, 2);
+});
+
 test("multi-column sorting honors priority and direction", () => {
   const rows = [
     { type: "ETF", value: 10 },

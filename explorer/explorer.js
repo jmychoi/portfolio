@@ -193,12 +193,15 @@
     history.value = "history";
     history.textContent = "History view";
     elements.contextSelect.append(history);
-    state.collection.snapshots.forEach((snapshot, index) => {
-      const item = document.createElement("option");
-      item.value = `snapshot:${index}`;
-      item.textContent = snapshot.date;
-      elements.contextSelect.append(item);
-    });
+    state.collection.snapshots
+      .map((snapshot, index) => ({ snapshot, index }))
+      .reverse()
+      .forEach(({ snapshot, index }) => {
+        const item = document.createElement("option");
+        item.value = `snapshot:${index}`;
+        item.textContent = snapshot.date;
+        elements.contextSelect.append(item);
+      });
     elements.contextSelect.value = "history";
   }
 
