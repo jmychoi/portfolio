@@ -1,0 +1,11 @@
+"Holdings Export as of Jan 2, 2026 4:04:06 PM ET"
+
+Account: DEMO123 - Investment
+
+"Balances as of Jan 2, 2026"
+
+Currency,Cash,Investments,Short,Total,Exchange Rate to CAD
+USD,"123.45","1000.00",N/A,"1123.45",1.40000
+
+,Product,Symbol,Name,Quantity,Last Price,Currency,Change $,Change %,Total Book Cost,Total Market Value,Unrealized Gain/Loss $,Unrealized Gain/Loss %,Average Cost,Annual Dividend Amount $,Dividend Ex Date,Load Type,RSP Eligibility,Automatic Investment Plan,DRIP Eligibility,Coupon Rate,Maturity Date,Expiration Date,Open Interest
+USD Holdings,"ETFs and ETNs",FUNDGLB,FICTIONAL GLOBAL ETF,"10","100",USD,"0","0%","950","1000","50","5.26%","95",,,"","","","No",,,,
