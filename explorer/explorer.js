@@ -38,7 +38,7 @@
     snapshotIndex: 0,
     selectedAccounts: new Set(),
     groupBy: "None",
-    sortKeys: [{ key: "holdingPct", direction: "desc" }],
+    sortKeys: [{ key: "totalCad", direction: "desc" }],
     historySelectedAccounts: new Set(),
     historyMetric: "value",
     historyStackBy: "account",
@@ -141,7 +141,7 @@
     state.snapshotIndex = 0;
     state.selectedAccounts = new Set(portfolio.accounts);
     state.groupBy = "None";
-    state.sortKeys = [{ key: "holdingPct", direction: "desc" }];
+    state.sortKeys = [{ key: "totalCad", direction: "desc" }];
     initializeSinglePortfolioContext(portfolio);
     elements.contextSelect.hidden = false;
     snapshotView.initializeControls();
@@ -169,7 +169,7 @@
     state.portfolio = snapshot;
     state.selectedAccounts = new Set(snapshot.accounts);
     state.groupBy = "None";
-    state.sortKeys = [{ key: "holdingPct", direction: "desc" }];
+    state.sortKeys = [{ key: "totalCad", direction: "desc" }];
     snapshotView.initializeControls();
   }
 
@@ -187,11 +187,6 @@
     applyMobileAccountDefaults();
     if (state.collection && state.viewMode === "history") historyView.renderHistory();
     else snapshotView.renderSnapshot();
-  }
-
-  function handleMobileModeChange() {
-    initializeTheme();
-    if (state.portfolio) render();
   }
 
   function applyMobileAccountDefaults() {
@@ -271,6 +266,11 @@
 
   function chartColors() {
     return CHART_COLORS;
+  }
+
+  function handleMobileModeChange() {
+    initializeTheme();
+    if (state.portfolio) render();
   }
 
   function pageRoot() {

@@ -49,7 +49,7 @@
     });
     elements.groupBy.addEventListener("change", () => {
       state.groupBy = elements.groupBy.value;
-      state.sortKeys = [{ key: "holdingPct", direction: "desc" }];
+      state.sortKeys = [{ key: "totalCad", direction: "desc" }];
       render();
     });
 
@@ -353,7 +353,7 @@
 
   function applyColumnClasses(element, column) {
     element.classList.add(`column-${column.key.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`);
-    if (["asset", "label", "totalCad", "holdingPct", "projectedIncome"].includes(column.key)) {
+    if (["asset", "label", "totalCad", "projectedIncome"].includes(column.key)) {
       element.classList.add("mobile-keep-column");
     }
     if (column.numeric) element.classList.add("number");
